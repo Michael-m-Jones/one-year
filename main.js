@@ -98,18 +98,20 @@
     if (window.gsap && window.ScrollTrigger) {
       gsap.registerPlugin(ScrollTrigger);
 
-      gsap.utils.toArray(".reveal").forEach(function (el) {
-        ScrollTrigger.create({
-          trigger: el, start: "top 85%",
-          onEnter: function () { el.classList.add("in"); },
-        });
-      });
-
-      // staggered reveal for grouped reveals inside a section
+      // staggered reveal timing for grouped reveals inside a section
       gsap.utils.toArray("[data-section]").forEach(function (sec) {
         const items = sec.querySelectorAll(".reveal");
         items.forEach(function (el, i) { el.style.transitionDelay = (i * 0.08) + "s"; });
       });
+
+      // Reveal-on-enter via IntersectionObserver — fires for above-the-fold
+      // elements on load (ScrollTrigger onEnter does not), so the hero animates in.
+      var revealIO = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) { e.target.classList.add("in"); revealIO.unobserve(e.target); }
+        });
+      }, { threshold: 0.12, rootMargin: "0px 0px -6% 0px" });
+      document.querySelectorAll(".reveal").forEach(function (el) { revealIO.observe(el); });
 
       // moments slide in
       gsap.utils.toArray("[data-moment]").forEach(function (m) {
