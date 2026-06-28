@@ -95,9 +95,26 @@ body::after{
 @keyframes eq{0%,100%{height:5px}50%{height:18px}}
 .music-toggle.paused .bars i{animation-play-state:paused;height:5px}
 
+/* ============ PROGRESS BAR ============ */
+#progress{position:fixed;top:0;left:0;height:3px;width:100%;transform:scaleX(0);transform-origin:0 50%;
+  background:linear-gradient(90deg,var(--blue),var(--blush),var(--gold));z-index:120;will-change:transform;pointer-events:none}
+
+/* ============ RICHER REVEALS (added via JS) ============ */
+.r-clip{clip-path:inset(0 0 103% 0);will-change:clip-path;
+  transition:clip-path 1.2s cubic-bezier(.2,.8,.2,1)}
+.r-clip.in{clip-path:inset(0 0 0% 0)}
+.r-left{opacity:0;transform:translateX(-46px);transition:opacity 1s ease, transform 1.1s cubic-bezier(.2,.8,.2,1)}
+.r-left.in{opacity:1;transform:none}
+.r-right{opacity:0;transform:translateX(46px);transition:opacity 1s ease, transform 1.1s cubic-bezier(.2,.8,.2,1)}
+.r-right.in{opacity:1;transform:none}
+
+@media (prefers-reduced-motion: reduce){
+  .reveal,.r-clip,.r-left,.r-right{opacity:1 !important;transform:none !important;clip-path:none !important;transition:opacity .4s ease}
+}
+
 /* ============ SHARED ============ */
 main{position:relative;z-index:1}
-section[data-section]{padding:14vh 8vw;position:relative}
+section[data-section]{padding:11vh 8vw;position:relative}
 .eyebrow{font-family:var(--hand);font-size:1.5rem;color:var(--blue-soft);margin-bottom:.4em}
 .accent{color:var(--blush)}
 .chapter-title{font-family:var(--serif);font-size:clamp(2.4rem,7vw,5rem);line-height:1.05}
@@ -126,7 +143,7 @@ section[data-section]{padding:14vh 8vw;position:relative}
 .chapter{min-height:60vh;display:flex;flex-direction:column;justify-content:center;align-items:flex-start}
 
 /* ============ TIMELINE ============ */
-.timeline{display:flex;flex-direction:column;gap:18vh}
+.timeline{display:flex;flex-direction:column;gap:12vh}
 .moment{display:grid;grid-template-columns:1fr 1fr;gap:6vw;align-items:center}
 .moment.reverse .moment-media{order:2}
 .moment-media{position:relative}
@@ -139,9 +156,9 @@ section[data-section]{padding:14vh 8vw;position:relative}
 .frame{border-radius:18px;overflow:hidden;aspect-ratio:4/5;
   box-shadow:0 36px 70px -34px rgba(0,0,0,.7);border:1px solid rgba(156,192,255,.14)}
 .frame.land{aspect-ratio:3/2}
-.frame img{width:100%;height:100%;object-fit:cover;display:block;transform:scale(1.001);
-  transition:transform 1.1s cubic-bezier(.2,.8,.2,1)}
-.moment:hover .frame img{transform:scale(1.06)}
+.frame img{width:100%;height:100%;object-fit:cover;display:block;will-change:transform}
+.frame{transition:filter .6s ease}
+.moment:hover .frame{filter:brightness(1.06)}
 .moment-media.duo{display:flex;flex-direction:column;gap:16px}
 
 /* milestone break */
