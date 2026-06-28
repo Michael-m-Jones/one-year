@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>One Year of Us</title>
+<meta name="description" content="A little universe for Samantha. One year, officially." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@300;400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<canvas id="trail"></canvas>
+
+<!-- Drop your song at song.mp3 — autoplays after "enter with sound". -->
+<audio id="song" loop preload="auto">
+  <source src="song.mp3" type="audio/mpeg" />
+</audio>
+
+<!-- ============ 1. PASSWORD GATE ============ -->
+<section id="gate" class="overlay">
+  <div class="gate-inner">
+    <p class="gate-kicker">a little something for</p>
+    <h1 class="gate-name">Tiny&nbsp;Baby</h1>
+    <p class="gate-hint">type the word that started it all</p>
+    <form id="gate-form" autocomplete="off">
+      <input id="gate-input" type="password" inputmode="text" aria-label="password" placeholder="••••" />
+      <button type="submit" class="gate-btn">unlock</button>
+    </form>
+    <p id="gate-error" class="gate-error">&nbsp;</p>
+  </div>
+</section>
+
+<!-- ============ 2. INTRO ============ -->
+<section id="intro" class="overlay hidden">
+  <div class="intro-inner">
+    <div class="intro-counter"><span class="dd">08</span><span class="sep">·</span><span class="mm">02</span></div>
+    <p class="intro-line">one year. officially.</p>
+    <div class="intro-enter">
+      <button id="enter-sound" class="enter-btn">enter with sound</button>
+      <button id="enter-silent" class="enter-btn ghost">enter without</button>
+    </div>
+    <p class="intro-tip">headphones make it better ♡</p>
+  </div>
+</section>
+
+<button id="music-toggle" class="music-toggle hidden" aria-label="toggle music">
+  <span class="bars"><i></i><i></i><i></i><i></i></span>
+</button>
+
+<!-- ============ MAIN EXPERIENCE ============ -->
+<main id="experience" class="hidden">
+
+  <!-- HERO -->
+  <section class="hero" data-section>
+    <div class="hero-photo" style="background-image:url('14-hawaii-1.jpg')"></div>
+    <div class="hero-content">
+      <p class="eyebrow reveal">Michael &amp; Samantha</p>
+      <h1 class="hero-title">
+        <span class="reveal">One</span>
+        <span class="reveal">Year</span>
+        <span class="reveal accent">of Us</span>
+      </h1>
+      <p class="hero-sub reveal">From a birthday weekend in Tahoe to right now — a year of firsts, and one very good idea.</p>
+      <div class="scroll-cue reveal"><span></span>scroll</div>
+    </div>
+  </section>
+
+  <!-- CHAPTER 01 -->
+  <section class="chapter" data-section>
+    <p class="chapter-num reveal">Ch. 01</p>
+    <h2 class="chapter-title reveal">How it started</h2>
+  </section>
+
+  <!-- TIMELINE PART 1 -->
+  <section class="timeline" data-section>
+
+    <article class="moment" data-moment>
+      <div class="moment-media"><div class="frame"><img src="01-tahoe.jpg" loading="lazy" alt="Tahoe" /></div></div>
+      <div class="moment-text">
+        <span class="moment-date">June 5, 2025 · Tahoe</span>
+        <h3 class="moment-title">The weekend we met</h3>
+        <p>A birthday weekend in Tahoe. We did karaoke — which genuinely terrifies us both — and somewhere in a casino (neither of us gamble) we had our first kiss. Best bad idea ever.</p>
+      </div>
+    </article>
+
+    <article class="moment reverse" data-moment>
+      <div class="moment-media"><div class="frame"><img src="02-photobooth.jpg" loading="lazy" alt="First photobooth" /></div></div>
+      <div class="moment-text">
+        <span class="moment-date">the first visit</span>
+        <h3 class="moment-title">Our first strip</h3>
+        <p>The first time Samantha came up to visit me, we squeezed into a photobooth. We've kept the tradition alive ever since — there's a strip for every era of us.</p>
+      </div>
+    </article>
+
+  </section>
+
+  <!-- MILESTONE: OFFICIAL -->
+  <section class="milestone" data-section>
+    <p class="milestone-date reveal">August 2, 2025</p>
+    <h2 class="milestone-word reveal">Official.</h2>
+    <p class="milestone-sub reveal">We stopped pretending it was casual. Year one starts here.</p>
+  </section>
+
+  <!-- CHAPTER 02 -->
+  <section class="chapter" data-section>
+    <p class="chapter-num reveal">Ch. 02</p>
+    <h2 class="chapter-title reveal">A year of firsts</h2>
+  </section>
+
+  <!-- TIMELINE PART 2 -->
+  <section class="timeline" data-section>
+
+    <article class="moment" data-moment>
+      <div class="moment-media"><div class="frame"><img src="03-gym-hank.jpg" loading="lazy" alt="First gym day" /></div></div>
+      <div class="moment-text">
+        <span class="moment-date">first gym day</span>
+        <h3 class="moment-title">Mandatory posing</h3>
+        <p>Our first workout together — obligatory flexing included, with Hank loyally third-wheeling. Back when Samantha still came to the gym with me. (We remember.)</p>
+      </div>
+    </article>
+
+    <article class="moment reverse" data-moment>
+      <div class="moment-media"><div class="frame"><img src="04-sweet-maple.jpg" loading="lazy" alt="Sweet Maple" /></div></div>
+      <div class="moment-text">
+        <span class="moment-date">Sweet Maple</span>
+        <h3 class="moment-title">The first of many breakfasts</h3>
+        <p>Our first breakfast there — and the start of a long, delicious habit. The ramen-fried-rice dish is officially Ours now.</p>
+      </div>
+    </article>
+
+    <article class="moment" data-moment>
+      <div class="moment-media"><div class="frame"><img src="05-salt-and-straw.jpg" loading="lazy" alt="Salt & Straw" /></div></div>
+      <div class="moment-text">
+        <span class="moment-date">Salt &amp; Straw</span>
+        <h3 class="moment-title">First scoops</h3>
+        <p>The first cones, instantly a tradition. Whatever else is going on, we will always make room for ice cream.</p>
+      </div>
+    </article>
+
+    <article class="moment reverse" data-moment>
+      <div class="moment-media"><div class="frame"><img src="06-ferry-building.jpg" loading="lazy" alt="Ferry Building" /></div></div>
+      <div class="moment-text">
+        <span class="moment-date">the Ferry Building</span>
+        <h3 class="moment-title">Sample everything</h3>
+        <p>Where Samantha insists on buying one of everything so we can sit outside and taste our way through it all. Honestly? Flawless system.</p>
+      </div>
+    </article>
+
+    <article class="moment" data-moment>
+      <div class="moment-media"><div class="frame"><img src="07-alta-plaza.jpg" loading="lazy" alt="Alta Plaza" /></div></div>
+      <div class="moment-text">
+        <span class="moment-date">sunset · Alta Plaza</span>
+        <h3 class="moment-title">I carried you up the hill</h3>
+        <p>Our first sunset here — earned only because I carried her up the hill (she flat-out refused to walk). Alta's been a love–hate thing ever since. Mostly the hate is the hill.</p>
+      </div>
+    </article>
+
+    <article class="moment reverse" data-moment>
+      <div class="moment-media"><div class="frame"><img src="08-picnic.jpg" loading="lazy" alt="Golden Gate Park picnic" /></div></div>
+      <div class="moment-text">
+        <span class="moment-date">Golden Gate Park</span>
+        <h3 class="moment-title">A picnic by the flowers</h3>
+        <p>Our first picnic date, right by the Conservatory of Flowers. Takeaway sushi, far too many snacks, perfect weather. A flawless afternoon.</p>
+      </div>
+    </article>
+
+    <article class="moment" data-moment>
+      <div class="moment-media"><div class="frame"><img src="09-disney.jpg" loading="lazy" alt="Disney" /></div></div>
+      <div class="moment-text">
+        <span class="moment-date">first trip · Disney</span>
+        <h3 class="moment-title">Disney (and near-death by roller coaster)</h3>
+        <p>So much fun — minus the part where Samantha nearly ended me on the roller coasters. Great food, great chaos. (Ask us about Universal, Harry Potter world, and a certain accidental bathroom recording another time.)</p>
+      </div>
+    </article>
+
+    <article class="moment reverse" data-moment>
+      <div class="moment-media"><div class="frame"><img src="10-huntington.jpg" loading="lazy" alt="Huntington Beach" /></div></div>
+      <div class="moment-text">
+        <span class="moment-date">Huntington Beach</span>
+        <h3 class="moment-title">Our first little getaway</h3>
+        <p>Our first mini-vacation together. Great hotel, great weather, unbeatable vibes. We're built for this.</p>
+      </div>
+    </article>
+
+    <article class="moment" data-moment>
+      <div class="moment-media"><div class="frame"><img src="11-japantown.jpg" loading="lazy" alt="Japantown" /></div></div>
+      <div class="moment-text">
+        <span class="moment-date">Japantown</span>
+        <h3 class="moment-title">The first pack</h3>
+        <p>It started innocently — a vending machine in Japantown. A thinly veiled cover story for what we now know was the beginning of a full-blown Pokémon era.</p>
+      </div>
+    </article>
+
+    <article class="moment reverse" data-moment>
+      <div class="moment-media"><div class="frame"><img src="12-parents.jpg" loading="lazy" alt="Meeting the parents" /></div></div>
+      <div class="moment-text">
+        <span class="moment-date">the families</span>
+        <h3 class="moment-title">Momma &amp; Poppa</h3>
+        <p>First time meeting the parents — so naturally we marched everyone to the Ferry Building to sample our way through it. Obviously.</p>
+      </div>
+    </article>
+
+    <article class="moment" data-moment>
+      <div class="moment-media"><div class="frame"><img src="13-valentines.jpg" loading="lazy" alt="First Valentine's" /></div></div>
+      <div class="moment-text">
+        <span class="moment-date">first Valentine's · Cotogna</span>
+        <h3 class="moment-title">The truffle incident</h3>
+        <p>The best pasta of our lives at Cotogna. Samantha accidentally ordered the truffle — a gloriously expensive mistake, and worth every single cent.</p>
+      </div>
+    </article>
+
+    <!-- HAWAII (two photos) -->
+    <article class="moment reverse" data-moment>
+      <div class="moment-media duo">
+        <div class="frame land"><img src="14-hawaii-1.jpg" loading="lazy" alt="Hawaii overlook" /></div>
+        <div class="frame"><img src="15-hawaii-2.jpg" loading="lazy" alt="Hawaii" /></div>
+      </div>
+      <div class="moment-text">
+        <span class="moment-date">Hawaii · Michael's birthday</span>
+        <h3 class="moment-title">Paradise (mostly)</h3>
+        <p>A birthday trip to Hawaii. Beautiful, sunny, an absolute blast — and we will be saying nothing about the darker, grosser, 3am chapter of this trip. The good parts were perfect.</p>
+      </div>
+    </article>
+
+    <article class="moment" data-moment>
+      <div class="moment-media"><div class="frame"><img src="16-birthday.jpg" loading="lazy" alt="Samantha's birthday" /></div></div>
+      <div class="moment-text">
+        <span class="moment-date">Samantha's birthday</span>
+        <h3 class="moment-title">Susie Cakes, all the flavors</h3>
+        <p>The best person to celebrate. A surprise Susie Cakes tasting with an absurd lineup of flavors. Zero regrets.</p>
+      </div>
+    </article>
+
+    <article class="moment reverse" data-moment>
+      <div class="moment-media"><div class="frame"><img src="17-gym-prep.jpg" loading="lazy" alt="Gym prep" /></div></div>
+      <div class="moment-text">
+        <span class="moment-date">prep season</span>
+        <h3 class="moment-title">Saint behavior</h3>
+        <p>Samantha putting up with Michael mid-prep. For the record: handling an irritable, short-fused big baby was so much harder than this photo lets on. Certified patience.</p>
+      </div>
+    </article>
+
+    <article class="moment" data-moment>
+      <div class="moment-media"><div class="frame"><img src="18-card-show.jpg" loading="lazy" alt="Card show" /></div></div>
+      <div class="moment-text">
+        <span class="moment-date">first card show</span>
+        <h3 class="moment-title">Two Charmanders &amp; a Wailord</h3>
+        <p>We came home with two new Charmanders and one Wailord. One of Michael's all-time favorite dates, no contest.</p>
+      </div>
+    </article>
+
+    <article class="moment reverse" data-moment>
+      <div class="moment-media"><div class="frame"><img src="19-ghibli.jpg" loading="lazy" alt="Studio Ghibli" /></div></div>
+      <div class="moment-text">
+        <span class="moment-date">lately</span>
+        <h3 class="moment-title">Room for Ghibli too</h3>
+        <p>Disney made room for Studio Ghibli, and it's been growing on her week by week. Turns out the heart has space for both.</p>
+      </div>
+    </article>
+
+  </section>
+
+  <!-- PHOTO WALL -->
+  <section class="wall-sec" data-section>
+    <h2 class="chapter-title center reveal">Everything, all at once</h2>
+    <div class="wall">
+      <img class="reveal" src="01-tahoe.jpg" loading="lazy" alt="" />
+      <img class="reveal" src="09-disney.jpg" loading="lazy" alt="" />
+      <img class="reveal" src="07-alta-plaza.jpg" loading="lazy" alt="" />
+      <img class="reveal" src="05-salt-and-straw.jpg" loading="lazy" alt="" />
+      <img class="reveal" src="02-photobooth.jpg" loading="lazy" alt="" />
+      <img class="reveal" src="14-hawaii-1.jpg" loading="lazy" alt="" />
+      <img class="reveal" src="16-birthday.jpg" loading="lazy" alt="" />
+      <img class="reveal" src="06-ferry-building.jpg" loading="lazy" alt="" />
+      <img class="reveal" src="08-picnic.jpg" loading="lazy" alt="" />
+      <img class="reveal" src="10-huntington.jpg" loading="lazy" alt="" />
+      <img class="reveal" src="13-valentines.jpg" loading="lazy" alt="" />
+      <img class="reveal" src="18-card-show.jpg" loading="lazy" alt="" />
+      <img class="reveal" src="12-parents.jpg" loading="lazy" alt="" />
+      <img class="reveal" src="11-japantown.jpg" loading="lazy" alt="" />
+      <img class="reveal" src="15-hawaii-2.jpg" loading="lazy" alt="" />
+      <img class="reveal" src="19-ghibli.jpg" loading="lazy" alt="" />
+    </div>
+  </section>
+
+  <!-- OUR NUMBERS -->
+  <section class="numbers" data-section>
+    <h2 class="chapter-title reveal center">Us, by the numbers</h2>
+    <div class="numbers-grid">
+      <div class="num-card reveal"><span class="num" data-count-from="2025-08-02">0</span><span class="num-label">days officially</span></div>
+      <div class="num-card reveal"><span class="num" data-count-from="2025-06-05">0</span><span class="num-label">days since Tahoe</span></div>
+      <div class="num-card reveal"><span class="num" data-count-to="∞">∞</span><span class="num-label">FaceTime calls</span></div>
+      <div class="num-card reveal"><span class="num" data-count-to="1">1</span><span class="num-label">very lucky me</span></div>
+    </div>
+  </section>
+
+  <!-- LOVE LETTER -->
+  <section class="letter" data-section>
+    <p class="chapter-num reveal center">Ch. 03</p>
+    <h2 class="chapter-title reveal center">For you</h2>
+    <div class="letter-body reveal">
+      <p>[ Your letter goes here. Write it yourself, or hand me bullet points and I'll draft it in your voice for you to edit. ]</p>
+    </div>
+    <p class="letter-sign reveal">— Michael</p>
+  </section>
+
+  <!-- FINALE -->
+  <section class="finale" data-section>
+    <h2 class="finale-title reveal">Here's to year two,<br/><span class="accent">Tiny Baby.</span></h2>
+    <p class="finale-sub reveal">♡</p>
+  </section>
+
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
+<script src="main.js"></script>
+</body>
+</html>
