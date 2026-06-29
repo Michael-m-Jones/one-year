@@ -147,12 +147,41 @@
 
     /* --- Scroll-driven cinematic effects (the "journey" feel) --- */
     if (hasGSAP && heavy) {
-      // Hero zoom + fade as you descend
-      gsap.fromTo(".hero-photo", { scale: 1.08, yPercent: 0 },
-        { scale: 1.32, yPercent: 14, ease: "none",
-          scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: true } });
-      gsap.to(".hero-content", { yPercent: -40, opacity: 0, ease: "none",
-        scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: true } });
+      // Pinned opening: the memory book opens, then the viewer dives into the story.
+      if (document.querySelector(".book-stage")) {
+        gsap.set(".book-orbit", { rotateX: 58, rotateZ: -4, y: 44, scale: 0.92 });
+        gsap.set(".book-spread", { opacity: 0.54, scale: 0.78, y: 34 });
+        gsap.set(".book-cover", { rotateY: 0, x: 0 });
+        gsap.set(".memory-card", { autoAlpha: 0, y: 40, scale: 0.78, rotateZ: function (i) { return [-18, 16, 12, -20][i] || 0; } });
+        gsap.set(".hero-content", { autoAlpha: 0, y: 72, scale: 0.95 });
+
+        const openBook = gsap.timeline({
+          scrollTrigger: {
+            trigger: ".hero",
+            start: "top top",
+            end: "+=185%",
+            scrub: 0.65,
+            pin: true,
+            anticipatePin: 1
+          }
+        });
+
+        openBook
+          .to(".memory-card", { autoAlpha: 0.82, y: 0, scale: 1, stagger: 0.035, ease: "power2.out", duration: 0.2 }, 0)
+          .to(".book-orbit", { rotateX: 52, rotateZ: -8, y: 8, scale: 1.08, ease: "power1.out", duration: 0.22 }, 0)
+          .to(".book-cover", { rotateY: -146, x: -8, ease: "power2.inOut", duration: 0.36 }, 0.08)
+          .to(".book-spread", { opacity: 1, scale: 1.1, y: -10, ease: "power2.out", duration: 0.36 }, 0.1)
+          .to(".card-a", { x: -120, y: -70, rotateZ: -31, scale: 1.18, ease: "power1.inOut", duration: 0.38 }, 0.18)
+          .to(".card-b", { x: 120, y: -74, rotateZ: 26, scale: 1.16, ease: "power1.inOut", duration: 0.38 }, 0.18)
+          .to(".card-c", { x: -140, y: 94, rotateZ: 22, scale: 1.12, ease: "power1.inOut", duration: 0.38 }, 0.18)
+          .to(".card-d", { x: 130, y: 86, rotateZ: -28, scale: 1.13, ease: "power1.inOut", duration: 0.38 }, 0.18)
+          .to(".portal-haze", { scale: 1.28, opacity: 1, ease: "power1.out", duration: 0.32 }, 0.14)
+          .to(".memory-card", { autoAlpha: 0, scale: 1.75, filter: "blur(8px) brightness(1.3)", ease: "power2.in", duration: 0.25 }, 0.5)
+          .to(".book-stage", { scale: 2.65, yPercent: -5, autoAlpha: 0, ease: "power2.in", duration: 0.36 }, 0.48)
+          .to(".hero-photo", { scale: 1.42, yPercent: 8, filter: "saturate(1.18) brightness(.92)", ease: "power1.inOut", duration: 0.38 }, 0.46)
+          .to(".hero-content", { autoAlpha: 1, y: 0, scale: 1, ease: "power2.out", duration: 0.28 }, 0.66)
+          .to(".hero-content", { yPercent: -32, opacity: 0, ease: "none", duration: 0.2 }, 0.92);
+      }
 
       // Parallax inside each moment photo (depth)
       document.querySelectorAll("[data-moment] .frame img").forEach(function (img) {
@@ -167,6 +196,16 @@
           scrollTrigger: { trigger: text.closest("[data-moment]"), start: "top bottom", end: "bottom top", scrub: true } });
       });
 
+      // Whole memories drift as physical pages, without masking the actual photos.
+      document.querySelectorAll("[data-moment] .moment-media").forEach(function (media, i) {
+        const dir = media.closest(".moment").classList.contains("reverse") ? -1 : 1;
+        gsap.fromTo(media, { rotateZ: dir * -2.5, y: 36 },
+          { rotateZ: dir * 2.5, y: -36, ease: "none",
+            scrollTrigger: { trigger: media.closest("[data-moment]"), start: "top bottom", end: "bottom top", scrub: true } });
+        gsap.to(media, { filter: "drop-shadow(0 42px 46px rgba(0,0,0,.38))", duration: 0.4,
+          scrollTrigger: { trigger: media.closest("[data-moment]"), start: "top 70%", end: "top 35%", scrub: true } });
+      });
+
       // Chapter titles drift a touch (parallax)
       document.querySelectorAll(".chapter-title").forEach(function (t) {
         gsap.fromTo(t, { yPercent: 14 }, { yPercent: -14, ease: "none",
@@ -179,6 +218,11 @@
           { scale: 1, opacity: 1, letterSpacing: "0em", ease: "none",
             scrollTrigger: { trigger: ".milestone", start: "top 85%", end: "center center", scrub: true } });
       }
+
+      // Photo wall erupts upward like the book spilling open.
+      gsap.fromTo(".wall img", { y: 120, rotateZ: function (i) { return (i % 2 ? 7 : -7); }, scale: 0.92 },
+        { y: 0, rotateZ: 0, scale: 1, stagger: 0.035, ease: "power2.out",
+          scrollTrigger: { trigger: ".wall-sec", start: "top 78%", end: "top 24%", scrub: 0.7 } });
     }
 
     /* --- Scroll progress bar --- */
@@ -284,29 +328,140 @@
   }
   function noop() {}
 
-  /* ---------- 5. MOUSE TRAIL (desktop) ---------- */
+  /* ---------- 5. HEART TRAIL (desktop) ---------- */
   (function trail() {
     const canvas = document.getElementById("trail");
     if (!canvas || isSmall || reduceMotion) return;
     const ctx = canvas.getContext("2d");
-    let w, h, pts = [];
-    function size() { w = canvas.width = innerWidth; h = canvas.height = innerHeight; }
+    const colors = ["#9cc0ff", "#ff9fb6", "#ffd27a", "#f6f2e9"];
+    let w, h, dpr = 1, particles = [], last = null;
+
+    function size() {
+      dpr = Math.min(2, window.devicePixelRatio || 1);
+      w = canvas.width = Math.floor(innerWidth * dpr);
+      h = canvas.height = Math.floor(innerHeight * dpr);
+      canvas.style.width = innerWidth + "px";
+      canvas.style.height = innerHeight + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
     size(); addEventListener("resize", size);
-    addEventListener("mousemove", function (e) {
-      pts.push({ x: e.clientX, y: e.clientY, life: 1 });
-      if (pts.length > 40) pts.shift();
-    });
-    function loop() {
-      ctx.clearRect(0, 0, w, h);
-      for (let i = 0; i < pts.length; i++) {
-        const p = pts[i]; p.life -= 0.025;
-        if (p.life <= 0) continue;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 5 * p.life, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(111,160,255," + (p.life * 0.5) + ")";
-        ctx.fill();
+
+    addEventListener("pointermove", function (e) {
+      const now = performance.now();
+      const dx = last ? e.clientX - last.x : 0;
+      const dy = last ? e.clientY - last.y : 0;
+      const speed = Math.min(32, Math.hypot(dx, dy));
+      if (!last || speed > 5 || now - last.t > 55) {
+        addHeart(e.clientX, e.clientY, dx, dy, speed);
+        if (speed > 14) addSpark(e.clientX, e.clientY, dx, dy);
+        last = { x: e.clientX, y: e.clientY, t: now };
       }
-      pts = pts.filter(function (p) { return p.life > 0; });
+    }, { passive: true });
+
+    addEventListener("pointerdown", function (e) {
+      for (let i = 0; i < 14; i++) {
+        const angle = (Math.PI * 2 * i) / 14;
+        particles.push({
+          type: i % 3 ? "spark" : "heart",
+          x: e.clientX,
+          y: e.clientY,
+          vx: Math.cos(angle) * (1.2 + Math.random() * 2.8),
+          vy: Math.sin(angle) * (1.2 + Math.random() * 2.8),
+          size: 8 + Math.random() * 12,
+          life: 1,
+          decay: 0.012 + Math.random() * 0.01,
+          rot: angle,
+          spin: (Math.random() - 0.5) * 0.12,
+          color: colors[i % colors.length]
+        });
+      }
+    });
+
+    function addHeart(x, y, dx, dy, speed) {
+      particles.push({
+        type: "heart",
+        x: x + (Math.random() - 0.5) * 8,
+        y: y + (Math.random() - 0.5) * 8,
+        vx: -dx * 0.018 + (Math.random() - 0.5) * 1.1,
+        vy: -dy * 0.018 - 0.35 - Math.random() * 0.8,
+        size: 9 + Math.random() * 11 + speed * 0.24,
+        life: 1,
+        decay: 0.011 + Math.random() * 0.008,
+        rot: Math.atan2(dy, dx || 1) + (Math.random() - 0.5) * 0.9,
+        spin: (Math.random() - 0.5) * 0.08,
+        color: colors[Math.floor(Math.random() * colors.length)]
+      });
+      if (particles.length > 130) particles.splice(0, particles.length - 130);
+    }
+
+    function addSpark(x, y, dx, dy) {
+      particles.push({
+        type: "spark",
+        x: x + (Math.random() - 0.5) * 10,
+        y: y + (Math.random() - 0.5) * 10,
+        vx: -dx * 0.012 + (Math.random() - 0.5) * 1.8,
+        vy: -dy * 0.012 + (Math.random() - 0.5) * 1.8,
+        size: 3 + Math.random() * 6,
+        life: 1,
+        decay: 0.018 + Math.random() * 0.018,
+        rot: Math.random() * Math.PI,
+        spin: (Math.random() - 0.5) * 0.16,
+        color: colors[Math.floor(Math.random() * colors.length)]
+      });
+    }
+
+    function drawHeart(p) {
+      const s = p.size / 18;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.scale(s, s);
+      ctx.beginPath();
+      ctx.moveTo(0, 5);
+      ctx.bezierCurveTo(-18, -8, -9, -24, 0, -12);
+      ctx.bezierCurveTo(9, -24, 18, -8, 0, 5);
+      ctx.closePath();
+      ctx.fillStyle = p.color;
+      ctx.shadowColor = p.color;
+      ctx.shadowBlur = 18 * p.life;
+      ctx.globalAlpha = Math.max(0, p.life) * 0.92;
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawSpark(p) {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.strokeStyle = p.color;
+      ctx.globalAlpha = Math.max(0, p.life) * 0.86;
+      ctx.lineWidth = 1.7;
+      ctx.shadowColor = p.color;
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.moveTo(-p.size, 0);
+      ctx.lineTo(p.size, 0);
+      ctx.moveTo(0, -p.size);
+      ctx.lineTo(0, p.size);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function loop() {
+      ctx.clearRect(0, 0, innerWidth, innerHeight);
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        p.life -= p.decay;
+        if (p.life <= 0) continue;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vx *= 0.985;
+        p.vy = p.vy * 0.985 - 0.006;
+        p.rot += p.spin;
+        if (p.type === "heart") drawHeart(p);
+        else drawSpark(p);
+      }
+      particles = particles.filter(function (p) { return p.life > 0; });
       requestAnimationFrame(loop);
     }
     loop();

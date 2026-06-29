@@ -10,8 +10,9 @@
 <link rel="preload" as="image" href="14-hawaii-1.jpg" fetchpriority="high" />
 <link rel="preload" as="image" href="01-tahoe.jpg" />
 <link rel="preload" as="image" href="02-photobooth.jpg" />
+<link rel="preload" as="image" href="09-disney.jpg" />
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@300;400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="style.css?v=20260629-4" />
+<link rel="stylesheet" href="style.css?v=20260629-8" />
 </head>
 <body>
 
@@ -58,8 +59,34 @@
 <main id="experience" class="hidden">
 
   <!-- HERO -->
-  <section class="hero" data-section>
+  <section class="hero cinematic-hero" data-section>
     <div class="hero-photo" style="background-image:url('14-hawaii-1.jpg')"></div>
+    <div class="portal-haze" aria-hidden="true"></div>
+    <div class="book-stage" aria-hidden="true">
+      <div class="memory-card card-a" style="background-image:url('02-photobooth.jpg')"></div>
+      <div class="memory-card card-b" style="background-image:url('09-disney.jpg')"></div>
+      <div class="memory-card card-c" style="background-image:url('13-valentines.jpg')"></div>
+      <div class="memory-card card-d" style="background-image:url('19-ghibli.jpg')"></div>
+      <div class="book-orbit">
+        <div class="book-shadow"></div>
+        <div class="book-spread">
+          <div class="book-page page-left">
+            <div class="book-photo" style="background-image:url('01-tahoe.jpg')"></div>
+            <span>the first spark</span>
+          </div>
+          <div class="book-page page-right">
+            <div class="book-photo" style="background-image:url('14-hawaii-1.jpg')"></div>
+            <span>one year later</span>
+          </div>
+          <div class="book-crease"></div>
+        </div>
+        <div class="book-cover">
+          <span class="cover-kicker">08 · 02</span>
+          <span class="cover-title">One Year<br/>of Us</span>
+          <span class="cover-name">Michael &amp; Samantha</span>
+        </div>
+      </div>
+    </div>
     <div class="hero-content">
       <p class="eyebrow reveal">Michael &amp; Samantha</p>
       <h1 class="hero-title">
@@ -322,6 +349,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
-<script src="main.js?v=20260629-4"></script>
+<script src="main.js?v=20260629-8"></script>
 </body>
 </html>
