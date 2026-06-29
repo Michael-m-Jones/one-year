@@ -124,12 +124,10 @@
     setupImageLoading();
 
     /* --- Entrance reveals: IntersectionObserver adds .in (fires for above-the-fold) --- */
-    // Tag moment pieces with directional / clip reveals for a richer entrance.
+    // Tag moment text with directional reveals. Frames stay unmasked so photos always paint.
     document.querySelectorAll("[data-moment]").forEach(function (m) {
       const reverse = m.classList.contains("reverse");
-      const frame = m.querySelector(".frame");
       const text = m.querySelector(".moment-text");
-      if (frame) frame.classList.add("r-clip");
       if (text) text.classList.add(reverse ? "r-right" : "r-left");
     });
     // milestone word is animated by GSAP scrub instead of the fade system

@@ -103,16 +103,16 @@ body.entered::after{animation:stars-drift 42s linear infinite}
   background:linear-gradient(90deg,var(--blue),var(--blush),var(--gold));z-index:120;will-change:transform;pointer-events:none}
 
 /* ============ RICHER REVEALS (added via JS) ============ */
-.r-clip{clip-path:inset(0 0 103% 0);will-change:clip-path;
-  transition:clip-path 1.2s cubic-bezier(.2,.8,.2,1)}
-.r-clip.in{clip-path:inset(0 0 0% 0)}
+.r-clip{transform:translateY(34px) scale(.985);filter:saturate(.85) brightness(.72);
+  will-change:transform,filter;transition:transform 1.2s cubic-bezier(.2,.8,.2,1), filter 1.2s ease}
+.r-clip.in{transform:none;filter:none}
 .r-left{opacity:0;transform:translateX(-46px);transition:opacity 1s ease, transform 1.1s cubic-bezier(.2,.8,.2,1)}
 .r-left.in{opacity:1;transform:none}
 .r-right{opacity:0;transform:translateX(46px);transition:opacity 1s ease, transform 1.1s cubic-bezier(.2,.8,.2,1)}
 .r-right.in{opacity:1;transform:none}
 
 @media (prefers-reduced-motion: reduce){
-  .reveal,.r-clip,.r-left,.r-right{opacity:1 !important;transform:none !important;clip-path:none !important;transition:opacity .4s ease}
+  .reveal,.r-clip,.r-left,.r-right{opacity:1 !important;transform:none !important;filter:none !important;transition:opacity .4s ease}
 }
 
 /* ============ SHARED ============ */
