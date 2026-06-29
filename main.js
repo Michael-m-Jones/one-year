@@ -20,6 +20,9 @@
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const isSmall = window.matchMedia("(max-width: 760px)").matches;
   const heavy = !reduceMotion && !isSmall; // scrub parallax only where it's smooth
+  const refreshScroll = debounce(function () {
+    if (window.ScrollTrigger) ScrollTrigger.refresh();
+  }, 160);
 
   let unlocked = false;
   try { unlocked = sessionStorage.getItem(UKEY) === "1"; } catch (e) {}
@@ -103,6 +106,7 @@
   let started = false;
   function initExperience() {
     if (started) return; started = true;
+    document.body.classList.add("entered");
 
     // Lenis smooth scroll, driven by GSAP ticker (canonical integration)
     let lenis = null;
@@ -117,6 +121,7 @@
 
     const hasGSAP = window.gsap && window.ScrollTrigger;
     if (hasGSAP) gsap.registerPlugin(ScrollTrigger);
+    setupImageLoading();
 
     /* --- Entrance reveals: IntersectionObserver adds .in (fires for above-the-fold) --- */
     // Tag moment pieces with directional / clip reveals for a richer entrance.
@@ -139,7 +144,7 @@
     const revealEls = document.querySelectorAll(".reveal, .r-clip, .r-left, .r-right");
     const io = new IntersectionObserver(function (entries) {
       entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } });
-    }, { threshold: 0.12, rootMargin: "0px 0px -6% 0px" });
+    }, { threshold: 0.1, rootMargin: "0px 0px 10% 0px" });
     revealEls.forEach(function (el) { io.observe(el); });
 
     /* --- Scroll-driven cinematic effects (the "journey" feel) --- */
@@ -156,6 +161,12 @@
         const frame = img.closest(".frame");
         gsap.fromTo(img, { yPercent: -10, scale: 1.18 }, { yPercent: 10, scale: 1.18, ease: "none",
           scrollTrigger: { trigger: frame, start: "top bottom", end: "bottom top", scrub: true } });
+      });
+
+      // Text breathes against the image motion, creating a more guided story beat.
+      document.querySelectorAll("[data-moment] .moment-text").forEach(function (text) {
+        gsap.fromTo(text, { yPercent: 10 }, { yPercent: -10, ease: "none",
+          scrollTrigger: { trigger: text.closest("[data-moment]"), start: "top bottom", end: "bottom top", scrub: true } });
       });
 
       // Chapter titles drift a touch (parallax)
@@ -180,15 +191,54 @@
 
     /* --- Keep ScrollTrigger aligned as lazy images load --- */
     if (hasGSAP) {
-      let rt;
       document.querySelectorAll("img").forEach(function (im) {
         if (im.complete) return;
-        im.addEventListener("load", function () { clearTimeout(rt); rt = setTimeout(function () { ScrollTrigger.refresh(); }, 200); });
+        im.addEventListener("load", refreshScroll);
       });
-      window.addEventListener("load", function () { ScrollTrigger.refresh(); });
+      window.addEventListener("load", refreshScroll);
     }
 
     initCounters();
+  }
+
+  /* ---------- 3A. IMAGE LOADING: keep the scroll story from outrunning photos ---------- */
+  function setupImageLoading() {
+    const imgs = Array.prototype.slice.call(document.querySelectorAll("img"));
+    const urls = [];
+
+    imgs.forEach(function (img, i) {
+      const src = img.currentSrc || img.getAttribute("src");
+      if (!src) return;
+      if (urls.indexOf(src) === -1) urls.push(src);
+
+      img.decoding = "async";
+      img.loading = i < 4 ? "eager" : (img.loading || "lazy");
+      if (i < 4 && "fetchPriority" in img) img.fetchPriority = "high";
+      if (img.complete && img.naturalWidth > 0) markImageReady(img);
+      else {
+        img.addEventListener("load", function () { markImageReady(img); }, { once: true });
+        img.addEventListener("error", function () { img.classList.add("load-error"); }, { once: true });
+      }
+    });
+
+    // The site is photo-led and the optimized photo set is small, so warming all unique
+    // URLs avoids blank beats on fast scroll and on GitHub Pages' first load.
+    runWhenIdle(function () {
+      urls.forEach(function (src) {
+        const preloader = new Image();
+        preloader.decoding = "async";
+        preloader.onload = refreshScroll;
+        preloader.src = src;
+        if (preloader.decode) preloader.decode().then(refreshScroll).catch(noop);
+      });
+    });
+  }
+
+  function markImageReady(img) {
+    img.classList.add("is-loaded");
+    const frame = img.closest(".frame");
+    if (frame) frame.classList.add("is-loaded");
+    refreshScroll();
   }
 
   /* ---------- 4. NUMBER COUNTERS (IntersectionObserver — reliable) ---------- */
@@ -222,6 +272,19 @@
     }
     requestAnimationFrame(tick);
   }
+
+  function debounce(fn, wait) {
+    let id = null;
+    return function () {
+      clearTimeout(id);
+      id = setTimeout(fn, wait);
+    };
+  }
+  function runWhenIdle(fn) {
+    if ("requestIdleCallback" in window) requestIdleCallback(fn, { timeout: 900 });
+    else setTimeout(fn, 450);
+  }
+  function noop() {}
 
   /* ---------- 5. MOUSE TRAIL (desktop) ---------- */
   (function trail() {

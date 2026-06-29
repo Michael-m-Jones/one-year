@@ -7,8 +7,11 @@
 <meta name="description" content="A little universe for Samantha. One year, officially." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="preload" as="image" href="14-hawaii-1.jpg" fetchpriority="high" />
+<link rel="preload" as="image" href="01-tahoe.jpg" />
+<link rel="preload" as="image" href="02-photobooth.jpg" />
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@300;400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="style.css?v=20260629-2" />
 </head>
 <body>
 
@@ -79,7 +82,7 @@
   <section class="timeline" data-section>
 
     <article class="moment" data-moment>
-      <div class="moment-media"><div class="frame"><img src="01-tahoe.jpg" loading="lazy" alt="Tahoe" /></div></div>
+      <div class="moment-media"><div class="frame"><img src="01-tahoe.jpg" width="1200" height="1600" loading="eager" decoding="async" fetchpriority="high" alt="Tahoe" /></div></div>
       <div class="moment-text">
         <span class="moment-date">June 5, 2025 · Tahoe</span>
         <h3 class="moment-title">The weekend we met</h3>
@@ -88,7 +91,7 @@
     </article>
 
     <article class="moment reverse" data-moment>
-      <div class="moment-media"><div class="frame"><img src="02-photobooth.jpg" loading="lazy" alt="First photobooth" /></div></div>
+      <div class="moment-media"><div class="frame"><img src="02-photobooth.jpg" width="862" height="1600" loading="eager" decoding="async" fetchpriority="high" alt="First photobooth" /></div></div>
       <div class="moment-text">
         <span class="moment-date">the first visit</span>
         <h3 class="moment-title">Our first strip</h3>
@@ -115,7 +118,7 @@
   <section class="timeline" data-section>
 
     <article class="moment" data-moment>
-      <div class="moment-media"><div class="frame"><img src="03-gym-hank.jpg" loading="lazy" alt="First gym day" /></div></div>
+      <div class="moment-media"><div class="frame"><img src="03-gym-hank.jpg" width="1200" height="1600" loading="lazy" decoding="async" alt="First gym day" /></div></div>
       <div class="moment-text">
         <span class="moment-date">first gym day</span>
         <h3 class="moment-title">Mandatory posing</h3>
@@ -124,7 +127,7 @@
     </article>
 
     <article class="moment reverse" data-moment>
-      <div class="moment-media"><div class="frame"><img src="04-sweet-maple.jpg" loading="lazy" alt="Sweet Maple" /></div></div>
+      <div class="moment-media"><div class="frame"><img src="04-sweet-maple.jpg" width="1200" height="1600" loading="lazy" decoding="async" alt="Sweet Maple" /></div></div>
       <div class="moment-text">
         <span class="moment-date">Sweet Maple</span>
         <h3 class="moment-title">The first of many breakfasts</h3>
@@ -133,7 +136,7 @@
     </article>
 
     <article class="moment" data-moment>
-      <div class="moment-media"><div class="frame"><img src="05-salt-and-straw.jpg" loading="lazy" alt="Salt & Straw" /></div></div>
+      <div class="moment-media"><div class="frame"><img src="05-salt-and-straw.jpg" width="1600" height="1200" loading="lazy" decoding="async" alt="Salt & Straw" /></div></div>
       <div class="moment-text">
         <span class="moment-date">Salt &amp; Straw</span>
         <h3 class="moment-title">First scoops</h3>
@@ -142,7 +145,7 @@
     </article>
 
     <article class="moment reverse" data-moment>
-      <div class="moment-media"><div class="frame"><img src="06-ferry-building.jpg" loading="lazy" alt="Ferry Building" /></div></div>
+      <div class="moment-media"><div class="frame"><img src="06-ferry-building.jpg" width="1200" height="1600" loading="lazy" decoding="async" alt="Ferry Building" /></div></div>
       <div class="moment-text">
         <span class="moment-date">the Ferry Building</span>
         <h3 class="moment-title">Sample everything</h3>
@@ -151,7 +154,7 @@
     </article>
 
     <article class="moment" data-moment>
-      <div class="moment-media"><div class="frame"><img src="07-alta-plaza.jpg" loading="lazy" alt="Alta Plaza" /></div></div>
+      <div class="moment-media"><div class="frame"><img src="07-alta-plaza.jpg" width="1200" height="1600" loading="lazy" decoding="async" alt="Alta Plaza" /></div></div>
       <div class="moment-text">
         <span class="moment-date">sunset · Alta Plaza</span>
         <h3 class="moment-title">I carried you up the hill</h3>
@@ -160,7 +163,7 @@
     </article>
 
     <article class="moment reverse" data-moment>
-      <div class="moment-media"><div class="frame"><img src="08-picnic.jpg" loading="lazy" alt="Golden Gate Park picnic" /></div></div>
+      <div class="moment-media"><div class="frame"><img src="08-picnic.jpg" width="1200" height="1600" loading="lazy" decoding="async" alt="Golden Gate Park picnic" /></div></div>
       <div class="moment-text">
         <span class="moment-date">Golden Gate Park</span>
         <h3 class="moment-title">A picnic by the flowers</h3>
@@ -169,7 +172,7 @@
     </article>
 
     <article class="moment" data-moment>
-      <div class="moment-media"><div class="frame"><img src="09-disney.jpg" loading="lazy" alt="Disney" /></div></div>
+      <div class="moment-media"><div class="frame"><img src="09-disney.jpg" width="1600" height="1200" loading="lazy" decoding="async" alt="Disney" /></div></div>
       <div class="moment-text">
         <span class="moment-date">first trip · Disney</span>
         <h3 class="moment-title">Disney (and near-death by roller coaster)</h3>
@@ -178,7 +181,7 @@
     </article>
 
     <article class="moment reverse" data-moment>
-      <div class="moment-media"><div class="frame"><img src="10-huntington.jpg" loading="lazy" alt="Huntington Beach" /></div></div>
+      <div class="moment-media"><div class="frame"><img src="10-huntington.jpg" width="1200" height="1600" loading="lazy" decoding="async" alt="Huntington Beach" /></div></div>
       <div class="moment-text">
         <span class="moment-date">Huntington Beach</span>
         <h3 class="moment-title">Our first little getaway</h3>
@@ -187,7 +190,7 @@
     </article>
 
     <article class="moment" data-moment>
-      <div class="moment-media"><div class="frame"><img src="11-japantown.jpg" loading="lazy" alt="Japantown" /></div></div>
+      <div class="moment-media"><div class="frame"><img src="11-japantown.jpg" width="1200" height="1600" loading="lazy" decoding="async" alt="Japantown" /></div></div>
       <div class="moment-text">
         <span class="moment-date">Japantown</span>
         <h3 class="moment-title">The first pack</h3>
@@ -196,7 +199,7 @@
     </article>
 
     <article class="moment reverse" data-moment>
-      <div class="moment-media"><div class="frame"><img src="12-parents.jpg" loading="lazy" alt="Meeting the parents" /></div></div>
+      <div class="moment-media"><div class="frame"><img src="12-parents.jpg" width="1200" height="1600" loading="lazy" decoding="async" alt="Meeting the parents" /></div></div>
       <div class="moment-text">
         <span class="moment-date">the families</span>
         <h3 class="moment-title">Momma &amp; Poppa</h3>
@@ -205,7 +208,7 @@
     </article>
 
     <article class="moment" data-moment>
-      <div class="moment-media"><div class="frame"><img src="13-valentines.jpg" loading="lazy" alt="First Valentine's" /></div></div>
+      <div class="moment-media"><div class="frame"><img src="13-valentines.jpg" width="1200" height="1600" loading="lazy" decoding="async" alt="First Valentine's" /></div></div>
       <div class="moment-text">
         <span class="moment-date">first Valentine's · Cotogna</span>
         <h3 class="moment-title">The truffle incident</h3>
@@ -216,8 +219,8 @@
     <!-- HAWAII (two photos) -->
     <article class="moment reverse" data-moment>
       <div class="moment-media duo">
-        <div class="frame land"><img src="14-hawaii-1.jpg" loading="lazy" alt="Hawaii overlook" /></div>
-        <div class="frame"><img src="15-hawaii-2.jpg" loading="lazy" alt="Hawaii" /></div>
+        <div class="frame land"><img src="14-hawaii-1.jpg" width="1600" height="1200" loading="lazy" decoding="async" alt="Hawaii overlook" /></div>
+        <div class="frame"><img src="15-hawaii-2.jpg" width="1200" height="1600" loading="lazy" decoding="async" alt="Hawaii" /></div>
       </div>
       <div class="moment-text">
         <span class="moment-date">Hawaii · Michael's birthday</span>
@@ -227,7 +230,7 @@
     </article>
 
     <article class="moment" data-moment>
-      <div class="moment-media"><div class="frame"><img src="16-birthday.jpg" loading="lazy" alt="Samantha's birthday" /></div></div>
+      <div class="moment-media"><div class="frame"><img src="16-birthday.jpg" width="1200" height="1600" loading="lazy" decoding="async" alt="Samantha's birthday" /></div></div>
       <div class="moment-text">
         <span class="moment-date">Samantha's birthday</span>
         <h3 class="moment-title">Susie Cakes, all the flavors</h3>
@@ -236,7 +239,7 @@
     </article>
 
     <article class="moment reverse" data-moment>
-      <div class="moment-media"><div class="frame"><img src="17-gym-prep.jpg" loading="lazy" alt="Gym prep" /></div></div>
+      <div class="moment-media"><div class="frame"><img src="17-gym-prep.jpg" width="1200" height="1600" loading="lazy" decoding="async" alt="Gym prep" /></div></div>
       <div class="moment-text">
         <span class="moment-date">prep season</span>
         <h3 class="moment-title">Saint behavior</h3>
@@ -245,7 +248,7 @@
     </article>
 
     <article class="moment" data-moment>
-      <div class="moment-media"><div class="frame"><img src="18-card-show.jpg" loading="lazy" alt="Card show" /></div></div>
+      <div class="moment-media"><div class="frame"><img src="18-card-show.jpg" width="1200" height="1600" loading="lazy" decoding="async" alt="Card show" /></div></div>
       <div class="moment-text">
         <span class="moment-date">first card show</span>
         <h3 class="moment-title">Two Charmanders &amp; a Wailord</h3>
@@ -254,7 +257,7 @@
     </article>
 
     <article class="moment reverse" data-moment>
-      <div class="moment-media"><div class="frame"><img src="19-ghibli.jpg" loading="lazy" alt="Studio Ghibli" /></div></div>
+      <div class="moment-media"><div class="frame"><img src="19-ghibli.jpg" width="1200" height="1600" loading="lazy" decoding="async" alt="Studio Ghibli" /></div></div>
       <div class="moment-text">
         <span class="moment-date">lately</span>
         <h3 class="moment-title">Room for Ghibli too</h3>
@@ -268,22 +271,22 @@
   <section class="wall-sec" data-section>
     <h2 class="chapter-title center reveal">Everything, all at once</h2>
     <div class="wall">
-      <img class="reveal" src="01-tahoe.jpg" loading="lazy" alt="" />
-      <img class="reveal" src="09-disney.jpg" loading="lazy" alt="" />
-      <img class="reveal" src="07-alta-plaza.jpg" loading="lazy" alt="" />
-      <img class="reveal" src="05-salt-and-straw.jpg" loading="lazy" alt="" />
-      <img class="reveal" src="02-photobooth.jpg" loading="lazy" alt="" />
-      <img class="reveal" src="14-hawaii-1.jpg" loading="lazy" alt="" />
-      <img class="reveal" src="16-birthday.jpg" loading="lazy" alt="" />
-      <img class="reveal" src="06-ferry-building.jpg" loading="lazy" alt="" />
-      <img class="reveal" src="08-picnic.jpg" loading="lazy" alt="" />
-      <img class="reveal" src="10-huntington.jpg" loading="lazy" alt="" />
-      <img class="reveal" src="13-valentines.jpg" loading="lazy" alt="" />
-      <img class="reveal" src="18-card-show.jpg" loading="lazy" alt="" />
-      <img class="reveal" src="12-parents.jpg" loading="lazy" alt="" />
-      <img class="reveal" src="11-japantown.jpg" loading="lazy" alt="" />
-      <img class="reveal" src="15-hawaii-2.jpg" loading="lazy" alt="" />
-      <img class="reveal" src="19-ghibli.jpg" loading="lazy" alt="" />
+      <img class="reveal" src="01-tahoe.jpg" width="1200" height="1600" loading="lazy" decoding="async" alt="" />
+      <img class="reveal" src="09-disney.jpg" width="1600" height="1200" loading="lazy" decoding="async" alt="" />
+      <img class="reveal" src="07-alta-plaza.jpg" width="1200" height="1600" loading="lazy" decoding="async" alt="" />
+      <img class="reveal" src="05-salt-and-straw.jpg" width="1600" height="1200" loading="lazy" decoding="async" alt="" />
+      <img class="reveal" src="02-photobooth.jpg" width="862" height="1600" loading="lazy" decoding="async" alt="" />
+      <img class="reveal" src="14-hawaii-1.jpg" width="1600" height="1200" loading="lazy" decoding="async" alt="" />
+      <img class="reveal" src="16-birthday.jpg" width="1200" height="1600" loading="lazy" decoding="async" alt="" />
+      <img class="reveal" src="06-ferry-building.jpg" width="1200" height="1600" loading="lazy" decoding="async" alt="" />
+      <img class="reveal" src="08-picnic.jpg" width="1200" height="1600" loading="lazy" decoding="async" alt="" />
+      <img class="reveal" src="10-huntington.jpg" width="1200" height="1600" loading="lazy" decoding="async" alt="" />
+      <img class="reveal" src="13-valentines.jpg" width="1200" height="1600" loading="lazy" decoding="async" alt="" />
+      <img class="reveal" src="18-card-show.jpg" width="1200" height="1600" loading="lazy" decoding="async" alt="" />
+      <img class="reveal" src="12-parents.jpg" width="1200" height="1600" loading="lazy" decoding="async" alt="" />
+      <img class="reveal" src="11-japantown.jpg" width="1200" height="1600" loading="lazy" decoding="async" alt="" />
+      <img class="reveal" src="15-hawaii-2.jpg" width="1200" height="1600" loading="lazy" decoding="async" alt="" />
+      <img class="reveal" src="19-ghibli.jpg" width="1200" height="1600" loading="lazy" decoding="async" alt="" />
     </div>
   </section>
 
@@ -319,6 +322,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
-<script src="main.js"></script>
+<script src="main.js?v=20260629-2"></script>
 </body>
 </html>
