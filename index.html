@@ -12,7 +12,7 @@
 <link rel="preload" as="image" href="02-photobooth.jpg" />
 <link rel="preload" as="image" href="09-disney.jpg" />
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@300;400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="style.css?v=20260629-8" />
+<link rel="stylesheet" href="style.css?v=20260629-13" />
 </head>
 <body>
 
@@ -54,6 +54,30 @@
 <button id="music-toggle" class="music-toggle hidden" aria-label="toggle music">
   <span class="bars"><i></i><i></i><i></i><i></i></span>
 </button>
+
+<div id="page-turner" aria-hidden="true">
+  <div class="turn-glow"></div>
+  <div class="turn-sheet">
+    <div class="turn-face turn-front">
+      <span id="turn-front-note">one more page</span>
+      <i></i><i></i><i></i><i></i>
+    </div>
+    <div class="turn-face turn-back">
+      <span id="turn-back-note">our story</span>
+      <i></i><i></i><i></i><i></i>
+    </div>
+  </div>
+  <div class="turn-shadow"></div>
+</div>
+
+<div id="photo-viewer" class="photo-viewer" aria-hidden="true">
+  <button class="photo-viewer-backdrop" type="button" aria-label="close photo"></button>
+  <div class="photo-viewer-shell" role="dialog" aria-modal="true" aria-label="photo memory">
+    <button id="photo-close" class="photo-close" type="button" aria-label="close photo">&times;</button>
+    <img id="photo-viewer-img" alt="" />
+    <p id="photo-viewer-caption"></p>
+  </div>
+</div>
 
 <!-- ============ MAIN EXPERIENCE ============ -->
 <main id="experience" class="hidden">
@@ -332,8 +356,22 @@
   <section class="letter" data-section>
     <p class="chapter-num reveal center">Ch. 03</p>
     <h2 class="chapter-title reveal center">For you</h2>
-    <div class="letter-body reveal">
-      <p>[ Your letter goes here. Write it yourself, or hand me bullet points and I'll draft it in your voice for you to edit. ]</p>
+    <div class="letter-stage reveal">
+      <button id="letter-envelope" class="letter-envelope" type="button" aria-expanded="false" aria-controls="letter-paper">
+        <span class="envelope-flap"></span>
+        <span class="envelope-pocket"></span>
+        <span class="envelope-label">open when you reach year one</span>
+        <span class="envelope-seal">♡</span>
+      </button>
+      <article id="letter-paper" class="letter-paper" aria-hidden="true">
+        <p class="letter-date">August 2, 2026</p>
+        <div class="letter-handwriting">
+          <p>Samantha,</p>
+          <p>One year ago, we were still pretending we were being reasonable. Then Tahoe happened, then the photobooth, then breakfasts, Disney, Hawaii, cards, Ghibli, and all the tiny ordinary days that somehow became my favorite part.</p>
+          <p>You make my life softer, funnier, and more like home. Thank you for choosing me on the easy days, the ridiculous days, and even the prep-season days where I fully did not deserve it.</p>
+          <p>I love you. I am so lucky this is ours.</p>
+        </div>
+      </article>
     </div>
     <p class="letter-sign reveal">— Michael</p>
   </section>
@@ -346,9 +384,9 @@
 
 </main>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
-<script src="main.js?v=20260629-8"></script>
+<script src="vendor/gsap.min.js"></script>
+<script src="vendor/ScrollTrigger.min.js"></script>
+<script src="vendor/lenis.min.js"></script>
+<script src="main.js?v=20260629-13"></script>
 </body>
 </html>

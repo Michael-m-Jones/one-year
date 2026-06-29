@@ -122,6 +122,9 @@
     const hasGSAP = window.gsap && window.ScrollTrigger;
     if (hasGSAP) gsap.registerPlugin(ScrollTrigger);
     setupImageLoading();
+    setupPhotoViewer(hasGSAP);
+    setupLetter(hasGSAP, lenis);
+    setupPhotoTilt();
 
     /* --- Entrance reveals: IntersectionObserver adds .in (fires for above-the-fold) --- */
     // Tag moment text with directional reveals. Frames stay unmasked so photos always paint.
@@ -223,6 +226,8 @@
       gsap.fromTo(".wall img", { y: 120, rotateZ: function (i) { return (i % 2 ? 7 : -7); }, scale: 0.92 },
         { y: 0, rotateZ: 0, scale: 1, stagger: 0.035, ease: "power2.out",
           scrollTrigger: { trigger: ".wall-sec", start: "top 78%", end: "top 24%", scrub: 0.7 } });
+
+      setupPageTurns();
     }
 
     /* --- Scroll progress bar --- */
@@ -281,6 +286,263 @@
     const frame = img.closest(".frame");
     if (frame) frame.classList.add("is-loaded");
     refreshScroll();
+  }
+
+  /* ---------- 3B. SCROLL PAGE TURNS: a physical transition between story beats ---------- */
+  function setupPageTurns() {
+    const turner = document.getElementById("page-turner");
+    const sheet = turner ? turner.querySelector(".turn-sheet") : null;
+    const shadow = turner ? turner.querySelector(".turn-shadow") : null;
+    const frontNote = document.getElementById("turn-front-note");
+    const backNote = document.getElementById("turn-back-note");
+    if (!turner || !sheet || !shadow || !window.gsap || !window.ScrollTrigger) return;
+
+    const targets = Array.prototype.slice.call(document.querySelectorAll(
+      ".chapter, .milestone, [data-moment], .wall-sec, .numbers, .letter, .finale"
+    ));
+    let activeTurn = -1;
+    gsap.set(turner, { autoAlpha: 0 });
+    gsap.set(sheet, { rotationY: -4, xPercent: 46, z: 0, scale: 1.02 });
+    gsap.set(shadow, { opacity: 0 });
+
+    targets.forEach(function (target, i) {
+      const notes = getPageTurnNotes(target, i);
+      ScrollTrigger.create({
+        trigger: target,
+        start: "top 96%",
+        end: "top 48%",
+        onUpdate: function (self) {
+          if (!self.isActive) return;
+          activeTurn = i;
+          setNotes(notes);
+          renderTurn(self.progress);
+        },
+        onLeave: function () {
+          if (activeTurn === i) hideTurn();
+        },
+        onLeaveBack: function () {
+          if (activeTurn === i) hideTurn();
+        }
+      });
+    });
+
+    function setNotes(notes) {
+      if (frontNote) frontNote.textContent = notes.front;
+      if (backNote) backNote.textContent = notes.back;
+    }
+    function renderTurn(progress) {
+      const p = clamp(progress, 0, 1);
+      const e = easeInOut(p);
+      const fadeIn = clamp(p / 0.16, 0, 1);
+      const fadeOut = clamp((1 - p) / 0.18, 0, 1);
+      const opacity = Math.min(fadeIn, fadeOut) * 0.98;
+      gsap.set(turner, { autoAlpha: opacity });
+      gsap.set(sheet, {
+        rotationY: lerp(-4, -158, e),
+        xPercent: lerp(46, -30, e),
+        z: lerp(0, 110, Math.sin(Math.PI * p)),
+        scale: lerp(1.02, 1.06, Math.sin(Math.PI * p))
+      });
+      gsap.set(shadow, {
+        opacity: Math.sin(Math.PI * p) * 0.5,
+        xPercent: lerp(36, -44, e),
+        scaleX: lerp(0.35, 1.2, Math.sin(Math.PI * p))
+      });
+    }
+    function hideTurn() {
+      activeTurn = -1;
+      gsap.set(turner, { autoAlpha: 0 });
+      gsap.set(shadow, { opacity: 0 });
+    }
+    function clamp(v, min, max) { return Math.min(max, Math.max(min, v)); }
+    function lerp(a, b, p) { return a + (b - a) * p; }
+    function easeInOut(p) { return p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2; }
+  }
+
+  function getPageTurnNotes(target, i) {
+    const byClass = function (selector) {
+      const el = target.querySelector(selector);
+      return el ? el.textContent.trim() : "";
+    };
+    if (target.matches("[data-moment]")) {
+      return { front: byClass(".moment-date") || "a page later", back: byClass(".moment-title") || "another memory" };
+    }
+    if (target.classList.contains("chapter")) {
+      return { front: byClass(".chapter-num") || "next chapter", back: byClass(".chapter-title") || "our story" };
+    }
+    if (target.classList.contains("milestone")) return { front: "August 2, 2025", back: "official" };
+    if (target.classList.contains("wall-sec")) return { front: "everything", back: "all at once" };
+    if (target.classList.contains("numbers")) return { front: "the math", back: "of us" };
+    if (target.classList.contains("letter")) return { front: "sealed", back: "for you" };
+    if (target.classList.contains("finale")) return { front: "year two", back: "Tiny Baby" };
+    return { front: "page " + (i + 1), back: "our story" };
+  }
+
+  /* ---------- 3C. INTERACTIVE PHOTO PRINTS ---------- */
+  function setupPhotoViewer(hasGSAP) {
+    const viewer = document.getElementById("photo-viewer");
+    const viewerImg = document.getElementById("photo-viewer-img");
+    const caption = document.getElementById("photo-viewer-caption");
+    const closeBtn = document.getElementById("photo-close");
+    const backdrop = viewer ? viewer.querySelector(".photo-viewer-backdrop") : null;
+    const shell = viewer ? viewer.querySelector(".photo-viewer-shell") : null;
+    if (!viewer || !viewerImg || !caption || !closeBtn || !backdrop || !shell) return;
+
+    let lastFocus = null;
+    const photos = document.querySelectorAll(".frame img, .wall img");
+    photos.forEach(function (img) {
+      const label = getPhotoCaption(img);
+      img.setAttribute("role", "button");
+      img.setAttribute("tabindex", "0");
+      img.setAttribute("aria-label", label ? "open photo: " + label : "open photo");
+      img.addEventListener("click", function () { openPhoto(img); });
+      img.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openPhoto(img);
+        }
+      });
+    });
+
+    closeBtn.addEventListener("click", closePhoto);
+    backdrop.addEventListener("click", closePhoto);
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && viewer.classList.contains("is-open")) closePhoto();
+    });
+
+    function openPhoto(img) {
+      lastFocus = document.activeElement;
+      const src = img.currentSrc || img.src || img.getAttribute("src");
+      const text = getPhotoCaption(img);
+      viewerImg.src = src;
+      viewerImg.alt = img.alt || text || "photo memory";
+      caption.textContent = text;
+      viewer.classList.add("is-open");
+      viewer.setAttribute("aria-hidden", "false");
+      document.body.classList.add("viewer-open");
+      closeBtn.focus({ preventScroll: true });
+
+      if (hasGSAP) {
+        gsap.fromTo(shell, { y: 28, scale: 0.94, rotationZ: -1, autoAlpha: 0 },
+          { y: 0, scale: 1, rotationZ: 0, autoAlpha: 1, duration: 0.52, ease: "power3.out" });
+        gsap.fromTo(viewerImg, { rotationY: -16, rotationX: 4, rotationZ: -2.5 },
+          { rotationY: 0, rotationX: 0, rotationZ: -1.2, duration: 0.75, ease: "power3.out" });
+      }
+    }
+
+    function closePhoto() {
+      viewer.classList.remove("is-open");
+      viewer.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("viewer-open");
+      if (lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true });
+    }
+  }
+
+  function getPhotoCaption(img) {
+    const moment = img.closest("[data-moment]");
+    if (moment) {
+      const date = moment.querySelector(".moment-date");
+      const title = moment.querySelector(".moment-title");
+      return [date ? date.textContent.trim() : "", title ? title.textContent.trim() : ""].filter(Boolean).join(" · ");
+    }
+    const src = img.getAttribute("src");
+    const match = Array.prototype.slice.call(document.querySelectorAll("[data-moment] img"))
+      .find(function (candidate) { return candidate.getAttribute("src") === src; });
+    if (match) return getPhotoCaption(match);
+    return img.alt || "one of our pages";
+  }
+
+  function setupPhotoTilt() {
+    if (!heavy) return;
+    document.querySelectorAll(".frame").forEach(function (frame) {
+      frame.addEventListener("pointermove", function (e) {
+        const r = frame.getBoundingClientRect();
+        const px = ((e.clientX - r.left) / r.width) - 0.5;
+        const py = ((e.clientY - r.top) / r.height) - 0.5;
+        frame.style.setProperty("--rx", (-py * 7).toFixed(2) + "deg");
+        frame.style.setProperty("--ry", (px * 7).toFixed(2) + "deg");
+        frame.style.setProperty("--lift", "-6px");
+        frame.classList.add("is-tilting");
+      }, { passive: true });
+      frame.addEventListener("pointerleave", function () {
+        frame.style.setProperty("--rx", "0deg");
+        frame.style.setProperty("--ry", "0deg");
+        frame.style.setProperty("--lift", "0px");
+        frame.classList.remove("is-tilting");
+      });
+    });
+  }
+
+  /* ---------- 3D. HANDWRITTEN LETTER ---------- */
+  function setupLetter(hasGSAP, lenis) {
+    const stage = document.querySelector(".letter-stage");
+    const envelope = document.getElementById("letter-envelope");
+    const paper = document.getElementById("letter-paper");
+    if (!stage || !envelope || !paper) return;
+
+    let open = false;
+    envelope.addEventListener("click", function () { setOpen(!open); });
+
+    if (hasGSAP && heavy && window.ScrollTrigger) {
+      ScrollTrigger.create({
+        trigger: ".letter",
+        start: "top 62%",
+        end: "bottom 30%",
+        onEnter: function () { stage.classList.add("is-peeking"); },
+        onEnterBack: function () { stage.classList.add("is-peeking"); },
+        onLeaveBack: function () { if (!open) stage.classList.remove("is-peeking"); }
+      });
+      gsap.fromTo(".letter-stage", { rotateX: 8, y: 70 }, {
+        rotateX: 0, y: 0, ease: "none",
+        scrollTrigger: { trigger: ".letter", start: "top bottom", end: "center center", scrub: true }
+      });
+    } else {
+      const io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) {
+            stage.classList.add("is-peeking");
+            io.disconnect();
+          }
+        });
+      }, { threshold: 0.35 });
+      io.observe(stage);
+    }
+
+    function setOpen(next) {
+      open = next;
+      envelope.classList.toggle("is-open", open);
+      paper.classList.toggle("is-open", open);
+      stage.classList.add("is-peeking");
+      envelope.setAttribute("aria-expanded", open ? "true" : "false");
+      paper.setAttribute("aria-hidden", open ? "false" : "true");
+      if (open) {
+        [90, 680].forEach(function (delay) {
+          setTimeout(function () {
+            centerPaper();
+            refreshScroll();
+          }, delay);
+        });
+        window.dispatchEvent(new CustomEvent("loveburst", {
+          detail: { x: innerWidth / 2, y: innerHeight * 0.55, count: 26, spread: 150 }
+        }));
+      }
+    }
+
+    function centerPaper() {
+      const rect = paper.getBoundingClientRect();
+      const targetTop = Math.max(34, (innerHeight - rect.height) / 2);
+      const delta = rect.top - targetTop;
+      if (Math.abs(delta) < 8) return;
+      const targetScroll = Math.max(0, scrollY + delta);
+      if (lenis && typeof lenis.scrollTo === "function") {
+        lenis.scrollTo(targetScroll, {
+          duration: reduceMotion ? 0 : 0.9,
+          easing: function (t) { return 1 - Math.pow(1 - t, 3); }
+        });
+      } else {
+        scrollTo({ top: targetScroll, behavior: reduceMotion ? "auto" : "smooth" });
+      }
+    }
   }
 
   /* ---------- 4. NUMBER COUNTERS (IntersectionObserver — reliable) ---------- */
@@ -359,12 +621,23 @@
     }, { passive: true });
 
     addEventListener("pointerdown", function (e) {
-      for (let i = 0; i < 14; i++) {
-        const angle = (Math.PI * 2 * i) / 14;
+      burstAt(e.clientX, e.clientY, 14, 0);
+    });
+
+    addEventListener("loveburst", function (e) {
+      const detail = e.detail || {};
+      burstAt(detail.x || innerWidth / 2, detail.y || innerHeight / 2, detail.count || 24, detail.spread || 0);
+    });
+
+    function burstAt(x, y, count, spread) {
+      for (let i = 0; i < count; i++) {
+        const angle = (Math.PI * 2 * i) / count;
+        const ox = spread ? (Math.random() - 0.5) * spread : 0;
+        const oy = spread ? (Math.random() - 0.5) * spread * 0.65 : 0;
         particles.push({
           type: i % 3 ? "spark" : "heart",
-          x: e.clientX,
-          y: e.clientY,
+          x: x + ox,
+          y: y + oy,
           vx: Math.cos(angle) * (1.2 + Math.random() * 2.8),
           vy: Math.sin(angle) * (1.2 + Math.random() * 2.8),
           size: 8 + Math.random() * 12,
@@ -375,7 +648,7 @@
           color: colors[i % colors.length]
         });
       }
-    });
+    }
 
     function addHeart(x, y, dx, dy, speed) {
       particles.push({
