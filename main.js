@@ -125,6 +125,7 @@
     setupPhotoViewer(hasGSAP);
     setupLetter(hasGSAP, lenis);
     setupPhotoTilt();
+    setupAmbientStory(hasGSAP);
 
     /* --- Entrance reveals: IntersectionObserver adds .in (fires for above-the-fold) --- */
     // Tag moment text with directional reveals. Frames stay unmasked so photos always paint.
@@ -226,8 +227,6 @@
       gsap.fromTo(".wall img", { y: 120, rotateZ: function (i) { return (i % 2 ? 7 : -7); }, scale: 0.92 },
         { y: 0, rotateZ: 0, scale: 1, stagger: 0.035, ease: "power2.out",
           scrollTrigger: { trigger: ".wall-sec", start: "top 78%", end: "top 24%", scrub: 0.7 } });
-
-      setupPageTurns();
     }
 
     /* --- Scroll progress bar --- */
@@ -288,94 +287,115 @@
     refreshScroll();
   }
 
-  /* ---------- 3B. SCROLL PAGE TURNS: a physical transition between story beats ---------- */
-  function setupPageTurns() {
-    const turner = document.getElementById("page-turner");
-    const sheet = turner ? turner.querySelector(".turn-sheet") : null;
-    const shadow = turner ? turner.querySelector(".turn-shadow") : null;
-    const frontNote = document.getElementById("turn-front-note");
-    const backNote = document.getElementById("turn-back-note");
-    if (!turner || !sheet || !shadow || !window.gsap || !window.ScrollTrigger) return;
+  /* ---------- 3B. AMBIENT STORY BACKDROP ---------- */
+  function setupAmbientStory(hasGSAP) {
+    const ambience = document.getElementById("ambience");
+    if (!ambience) return;
 
-    const targets = Array.prototype.slice.call(document.querySelectorAll(
-      ".chapter, .milestone, [data-moment], .wall-sec, .numbers, .letter, .finale"
+    const root = document.documentElement;
+    const photoLayers = Array.prototype.slice.call(ambience.querySelectorAll(".ambient-photo"));
+    const scenes = Array.prototype.slice.call(document.querySelectorAll(
+      ".hero, .chapter, .milestone, [data-moment], .wall-sec, .numbers, .letter, .finale"
     ));
-    let activeTurn = -1;
-    gsap.set(turner, { autoAlpha: 0 });
-    gsap.set(sheet, { rotationY: -4, xPercent: 46, z: 0, scale: 1.02 });
-    gsap.set(shadow, { opacity: 0 });
+    const palettes = [
+      { deep: "8 14 38", a: "111 160 255", b: "255 159 182", c: "255 210 122" },
+      { deep: "8 26 48", a: "116 180 255", b: "255 190 128", c: "156 192 255" },
+      { deep: "20 14 42", a: "255 159 182", b: "111 160 255", c: "255 210 122" },
+      { deep: "13 28 35", a: "89 201 183", b: "255 210 122", c: "146 220 255" },
+      { deep: "26 17 38", a: "229 160 255", b: "255 180 137", c: "255 222 154" },
+      { deep: "12 22 58", a: "90 134 255", b: "255 151 184", c: "255 210 122" },
+      { deep: "20 24 35", a: "171 211 255", b: "255 180 154", c: "184 225 167" }
+    ];
 
-    targets.forEach(function (target, i) {
-      const notes = getPageTurnNotes(target, i);
+    let currentScene = null;
+    let layerIndex = 0;
+    let currentPhoto = "";
+
+    activateNearestScene();
+
+    if (hasGSAP && window.ScrollTrigger) {
       ScrollTrigger.create({
-        trigger: target,
-        start: "top 96%",
-        end: "top 48%",
+        start: 0,
+        end: "max",
         onUpdate: function (self) {
-          if (!self.isActive) return;
-          activeTurn = i;
-          setNotes(notes);
-          renderTurn(self.progress);
-        },
-        onLeave: function () {
-          if (activeTurn === i) hideTurn();
-        },
-        onLeaveBack: function () {
-          if (activeTurn === i) hideTurn();
+          root.style.setProperty("--ribbon-shift", ((self.progress - 0.5) * 86).toFixed(2) + "%");
+          activateNearestScene();
         }
       });
-    });
-
-    function setNotes(notes) {
-      if (frontNote) frontNote.textContent = notes.front;
-      if (backNote) backNote.textContent = notes.back;
+      window.addEventListener("resize", debounce(activateNearestScene, 120));
+    } else {
+      window.addEventListener("scroll", scheduleAmbientUpdate, { passive: true });
+      window.addEventListener("resize", scheduleAmbientUpdate);
     }
-    function renderTurn(progress) {
-      const p = clamp(progress, 0, 1);
-      const e = easeInOut(p);
-      const fadeIn = clamp(p / 0.16, 0, 1);
-      const fadeOut = clamp((1 - p) / 0.18, 0, 1);
-      const opacity = Math.min(fadeIn, fadeOut) * 0.98;
-      gsap.set(turner, { autoAlpha: opacity });
-      gsap.set(sheet, {
-        rotationY: lerp(-4, -158, e),
-        xPercent: lerp(46, -30, e),
-        z: lerp(0, 110, Math.sin(Math.PI * p)),
-        scale: lerp(1.02, 1.06, Math.sin(Math.PI * p))
-      });
-      gsap.set(shadow, {
-        opacity: Math.sin(Math.PI * p) * 0.5,
-        xPercent: lerp(36, -44, e),
-        scaleX: lerp(0.35, 1.2, Math.sin(Math.PI * p))
+
+    function scheduleAmbientUpdate() {
+      if (scheduleAmbientUpdate.queued) return;
+      scheduleAmbientUpdate.queued = true;
+      requestAnimationFrame(function () {
+        scheduleAmbientUpdate.queued = false;
+        activateNearestScene();
       });
     }
-    function hideTurn() {
-      activeTurn = -1;
-      gsap.set(turner, { autoAlpha: 0 });
-      gsap.set(shadow, { opacity: 0 });
-    }
-    function clamp(v, min, max) { return Math.min(max, Math.max(min, v)); }
-    function lerp(a, b, p) { return a + (b - a) * p; }
-    function easeInOut(p) { return p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2; }
-  }
 
-  function getPageTurnNotes(target, i) {
-    const byClass = function (selector) {
-      const el = target.querySelector(selector);
-      return el ? el.textContent.trim() : "";
-    };
-    if (target.matches("[data-moment]")) {
-      return { front: byClass(".moment-date") || "a page later", back: byClass(".moment-title") || "another memory" };
+    function activateNearestScene() {
+      if (!scenes.length) return;
+      const focusY = innerHeight * 0.52;
+      let best = scenes[0];
+      let bestIndex = 0;
+      let bestScore = -Infinity;
+
+      scenes.forEach(function (scene, i) {
+        const rect = scene.getBoundingClientRect();
+        const visible = Math.max(0, Math.min(rect.bottom, innerHeight) - Math.max(rect.top, 0));
+        if (visible <= 0) return;
+        const center = rect.top + rect.height * 0.5;
+        const centerDistance = Math.abs(center - focusY);
+        const score = visible - centerDistance * 0.28;
+        if (score > bestScore) {
+          best = scene;
+          bestIndex = i;
+          bestScore = score;
+        }
+      });
+
+      activateScene(best, bestIndex);
     }
-    if (target.classList.contains("chapter")) {
-      return { front: byClass(".chapter-num") || "next chapter", back: byClass(".chapter-title") || "our story" };
+
+    function activateScene(scene, index) {
+      if (!scene) return;
+      const palette = palettes[Math.abs(index) % palettes.length];
+      root.style.setProperty("--mood-deep", palette.deep);
+      root.style.setProperty("--mood-a", palette.a);
+      root.style.setProperty("--mood-b", palette.b);
+      root.style.setProperty("--mood-c", palette.c);
+
+      if (currentScene && currentScene !== scene) currentScene.classList.remove("is-active");
+      currentScene = scene;
+      scene.classList.add("is-active");
+
+      const photo = getScenePhoto(scene);
+      if (photo && photo !== currentPhoto && photoLayers.length) {
+        currentPhoto = photo;
+        layerIndex = (layerIndex + 1) % photoLayers.length;
+        photoLayers.forEach(function (layer, i) { layer.classList.toggle("is-live", i === layerIndex); });
+        photoLayers[layerIndex].style.backgroundImage = toBackgroundImage(photo);
+      }
     }
-    if (target.classList.contains("milestone")) return { front: "August 2, 2025", back: "official" };
-    if (target.classList.contains("wall-sec")) return { front: "everything", back: "all at once" };
-    if (target.classList.contains("numbers")) return { front: "the math", back: "of us" };
-    if (target.classList.contains("letter")) return { front: "sealed", back: "for you" };
-    if (target.classList.contains("finale")) return { front: "year two", back: "Tiny Baby" };
-    return { front: "page " + (i + 1), back: "our story" };
+
+    function getScenePhoto(scene) {
+      const img = scene.querySelector(".frame img, .wall img");
+      if (img) return img.currentSrc || img.src || img.getAttribute("src");
+      const bgEl = scene.querySelector(".hero-photo, .book-photo");
+      if (!bgEl) return "";
+      const bg = getComputedStyle(bgEl).backgroundImage;
+      return bg && bg !== "none" ? bg : "";
+    }
+
+    function toBackgroundImage(value) {
+      if (!value) return "";
+      if (value.indexOf("url(") === 0) return value;
+      return "url(\"" + value.replace(/"/g, "\\\"") + "\")";
+    }
   }
 
   /* ---------- 3C. INTERACTIVE PHOTO PRINTS ---------- */

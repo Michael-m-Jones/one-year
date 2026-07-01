@@ -12,12 +12,19 @@
 <link rel="preload" as="image" href="02-photobooth.jpg" />
 <link rel="preload" as="image" href="09-disney.jpg" />
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@300;400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="style.css?v=20260629-13" />
+<link rel="stylesheet" href="style.css?v=20260630-1" />
 </head>
 <body>
 
 <div id="progress" aria-hidden="true"></div>
 <canvas id="trail"></canvas>
+<div id="ambience" aria-hidden="true">
+  <div class="ambient-photo ambient-a"></div>
+  <div class="ambient-photo ambient-b"></div>
+  <div class="ambient-wash"></div>
+  <div class="ambient-ribbon"></div>
+  <div class="ambient-grain"></div>
+</div>
 
 <!-- Drop your song at song.mp3 — autoplays after "enter with sound". -->
 <audio id="song" loop preload="auto">
@@ -54,21 +61,6 @@
 <button id="music-toggle" class="music-toggle hidden" aria-label="toggle music">
   <span class="bars"><i></i><i></i><i></i><i></i></span>
 </button>
-
-<div id="page-turner" aria-hidden="true">
-  <div class="turn-glow"></div>
-  <div class="turn-sheet">
-    <div class="turn-face turn-front">
-      <span id="turn-front-note">one more page</span>
-      <i></i><i></i><i></i><i></i>
-    </div>
-    <div class="turn-face turn-back">
-      <span id="turn-back-note">our story</span>
-      <i></i><i></i><i></i><i></i>
-    </div>
-  </div>
-  <div class="turn-shadow"></div>
-</div>
 
 <div id="photo-viewer" class="photo-viewer" aria-hidden="true">
   <button class="photo-viewer-backdrop" type="button" aria-label="close photo"></button>
@@ -387,6 +379,6 @@
 <script src="vendor/gsap.min.js"></script>
 <script src="vendor/ScrollTrigger.min.js"></script>
 <script src="vendor/lenis.min.js"></script>
-<script src="main.js?v=20260629-13"></script>
+<script src="main.js?v=20260630-1"></script>
 </body>
 </html>
