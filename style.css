@@ -19,6 +19,12 @@
   --mood-b:255 159 182;
   --mood-c:255 210 122;
   --ribbon-shift:0%;
+  --ambient-x:18%;
+  --ambient-y:24%;
+  --ambient-x2:82%;
+  --ambient-y2:74%;
+  --ambient-tilt:-8deg;
+  --ambient-scale:1;
   --serif:'Playfair Display', Georgia, serif;
   --sans:'Inter', system-ui, sans-serif;
   --hand:'Caveat', cursive;
@@ -60,31 +66,50 @@ body.entered::after{animation:stars-drift 42s linear infinite}
   position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;isolation:isolate;
   background:rgb(var(--mood-deep))
 }
+#ambience::before{
+  content:"";position:absolute;inset:-28%;z-index:2;opacity:.56;pointer-events:none;
+  background:
+    linear-gradient(96deg, transparent 0 36%, rgba(var(--mood-c),.11) 45%, rgba(255,255,255,.07) 50%, transparent 61%),
+    radial-gradient(ellipse at var(--ambient-x) var(--ambient-y), rgba(var(--mood-a),.16), transparent 45%),
+    radial-gradient(ellipse at var(--ambient-x2) var(--ambient-y2), rgba(var(--mood-b),.12), transparent 48%);
+  transform:rotate(var(--ambient-tilt)) scale(var(--ambient-scale));
+  filter:blur(16px);mix-blend-mode:screen;will-change:transform,opacity
+}
+body.entered #ambience::before{animation:world-breathe 18s ease-in-out infinite alternate}
+@keyframes world-breathe{
+  from{transform:rotate(var(--ambient-tilt)) scale(var(--ambient-scale)) translate3d(-1.2%,0,0)}
+  to{transform:rotate(var(--ambient-tilt)) scale(calc(var(--ambient-scale) + .045)) translate3d(1.2%,0,0)}
+}
 .ambient-photo{
-  position:absolute;inset:-8%;opacity:0;background-size:cover;background-position:center;
+  position:absolute;inset:-8%;z-index:1;opacity:0;background-size:cover;background-position:center;
   filter:blur(34px) saturate(1.22) brightness(.48);
   transform:scale(1.12);transition:opacity 1.15s ease, transform 3s ease;
   will-change:opacity,transform
 }
 .ambient-photo.is-live{opacity:.34;transform:scale(1.07)}
+#constellation-canvas,#journey-canvas{
+  position:absolute;inset:0;z-index:3;width:100%;height:100%;pointer-events:none
+}
+#constellation-canvas{opacity:.66;mix-blend-mode:screen}
+#journey-canvas{opacity:.82;mix-blend-mode:screen}
 .ambient-wash{
-  position:absolute;inset:0;
+  position:absolute;inset:0;z-index:4;
   background:
-    radial-gradient(ellipse at 18% 24%, rgba(var(--mood-a),.28), transparent 48%),
-    radial-gradient(ellipse at 82% 74%, rgba(var(--mood-b),.18), transparent 52%),
+    radial-gradient(ellipse at var(--ambient-x) var(--ambient-y), rgba(var(--mood-a),.28), transparent 48%),
+    radial-gradient(ellipse at var(--ambient-x2) var(--ambient-y2), rgba(var(--mood-b),.18), transparent 52%),
     linear-gradient(180deg, rgba(var(--mood-deep),.62), rgba(10,18,48,.92) 72%, rgba(10,18,48,.98));
   mix-blend-mode:screen;opacity:.9
 }
 .ambient-ribbon{
-  position:absolute;inset:-35%;opacity:.72;
+  position:absolute;inset:-35%;z-index:5;opacity:.72;
   background:
     linear-gradient(105deg, transparent 0 37%, rgba(var(--mood-c),.16) 44%, rgba(255,255,255,.09) 49%, transparent 58%),
     linear-gradient(78deg, transparent 0 44%, rgba(var(--mood-a),.12) 52%, transparent 62%);
-  transform:translate3d(var(--ribbon-shift),0,0) rotate(-8deg);
+  transform:translate3d(var(--ribbon-shift),0,0) rotate(var(--ambient-tilt));
   filter:blur(10px);will-change:transform
 }
 .ambient-grain{
-  position:absolute;inset:0;opacity:.12;mix-blend-mode:screen;
+  position:absolute;inset:0;z-index:6;opacity:.12;mix-blend-mode:screen;
   background-image:
     repeating-linear-gradient(0deg, rgba(255,255,255,.06) 0 1px, transparent 1px 3px),
     radial-gradient(1px 1px at 12% 18%, rgba(255,255,255,.5), transparent),
@@ -272,16 +297,17 @@ section[data-section]::selection{background:rgba(255,159,182,.35)}
 
 /* ============ TIMELINE ============ */
 .timeline{display:flex;flex-direction:column;gap:12vh}
-.moment{display:grid;grid-template-columns:1fr 1fr;gap:6vw;align-items:center;min-height:88vh}
+.moment{display:grid;grid-template-columns:1fr 1fr;gap:6vw;align-items:center;min-height:88vh;perspective:1400px;transform-style:preserve-3d}
 .moment{transition:opacity .75s ease, filter .75s ease}
 .moment.reverse .moment-media{order:2}
-.moment-media{position:relative;isolation:isolate}
+.moment-media{position:relative;isolation:isolate;transform-style:preserve-3d;will-change:transform,filter}
 .moment-media::before{
   content:"";position:absolute;inset:8% -6% -7% 10%;z-index:-1;border-radius:24px;
   background:linear-gradient(135deg, rgba(111,160,255,.2), rgba(255,159,182,.13));
   filter:blur(22px);opacity:.7;transform:rotate(-3deg);
 }
 .moment.reverse .moment-media::before{inset:8% 10% -7% -6%;transform:rotate(3deg)}
+.moment-text{transform-style:preserve-3d;will-change:transform}
 .moment-text .moment-date{font-family:var(--hand);font-size:1.5rem;color:var(--blue-soft)}
 .moment-text .moment-title{font-family:var(--serif);font-size:clamp(2rem,5vw,3.4rem);margin:.1em 0 .5em;line-height:1.05}
 .moment-text p{color:var(--cream-dim);font-size:1.08rem;line-height:1.7;max-width:46ch;font-weight:300}
@@ -432,6 +458,9 @@ section[data-section]::selection{background:rgba(255,159,182,.35)}
   #trail{display:none}
   #ambience .ambient-photo{filter:blur(24px) saturate(1.15) brightness(.45)}
   #ambience .ambient-photo.is-live{opacity:.2}
+  #ambience::before{opacity:.38;filter:blur(20px)}
+  #constellation-canvas{opacity:.34}
+  #journey-canvas{opacity:.42}
   #ambience .ambient-ribbon{opacity:.4}
   body.entered::after{animation:none}
   section[data-section]{padding:10vh 7vw}

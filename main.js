@@ -126,6 +126,7 @@
     setupLetter(hasGSAP, lenis);
     setupPhotoTilt();
     setupAmbientStory(hasGSAP);
+    setupJourneyCanvas(hasGSAP);
 
     /* --- Entrance reveals: IntersectionObserver adds .in (fires for above-the-fold) --- */
     // Tag moment text with directional reveals. Frames stay unmasked so photos always paint.
@@ -194,17 +195,25 @@
           scrollTrigger: { trigger: frame, start: "top bottom", end: "bottom top", scrub: true } });
       });
 
+      gsap.set("[data-moment]", { perspective: 1400 });
+      gsap.set("[data-moment] .moment-media, [data-moment] .moment-text", {
+        transformStyle: "preserve-3d",
+        transformPerspective: 1200
+      });
+
       // Text breathes against the image motion, creating a more guided story beat.
-      document.querySelectorAll("[data-moment] .moment-text").forEach(function (text) {
-        gsap.fromTo(text, { yPercent: 10 }, { yPercent: -10, ease: "none",
+      document.querySelectorAll("[data-moment] .moment-text").forEach(function (text, i) {
+        const dir = text.closest(".moment").classList.contains("reverse") ? -1 : 1;
+        gsap.fromTo(text, { yPercent: 10, z: 12, rotateY: dir * -2.5 },
+          { yPercent: -10, z: 74, rotateY: dir * 2.5, ease: "none",
           scrollTrigger: { trigger: text.closest("[data-moment]"), start: "top bottom", end: "bottom top", scrub: true } });
       });
 
       // Whole memories drift as physical pages, without masking the actual photos.
       document.querySelectorAll("[data-moment] .moment-media").forEach(function (media, i) {
         const dir = media.closest(".moment").classList.contains("reverse") ? -1 : 1;
-        gsap.fromTo(media, { rotateZ: dir * -2.5, y: 36 },
-          { rotateZ: dir * 2.5, y: -36, ease: "none",
+        gsap.fromTo(media, { rotateZ: dir * -3, rotateY: dir * 7, rotateX: -2, y: 42, z: -80 },
+          { rotateZ: dir * 2.8, rotateY: dir * -7, rotateX: 2, y: -42, z: 70, ease: "none",
             scrollTrigger: { trigger: media.closest("[data-moment]"), start: "top bottom", end: "bottom top", scrub: true } });
         gsap.to(media, { filter: "drop-shadow(0 42px 46px rgba(0,0,0,.38))", duration: 0.4,
           scrollTrigger: { trigger: media.closest("[data-moment]"), start: "top 70%", end: "top 35%", scrub: true } });
@@ -297,6 +306,7 @@
     const scenes = Array.prototype.slice.call(document.querySelectorAll(
       ".hero, .chapter, .milestone, [data-moment], .wall-sec, .numbers, .letter, .finale"
     ));
+    scenes.forEach(function (scene, i) { scene.dataset.storyIndex = i; });
     const palettes = [
       { deep: "8 14 38", a: "111 160 255", b: "255 159 182", c: "255 210 122" },
       { deep: "8 26 48", a: "116 180 255", b: "255 190 128", c: "156 192 255" },
@@ -305,6 +315,16 @@
       { deep: "26 17 38", a: "229 160 255", b: "255 180 137", c: "255 222 154" },
       { deep: "12 22 58", a: "90 134 255", b: "255 151 184", c: "255 210 122" },
       { deep: "20 24 35", a: "171 211 255", b: "255 180 154", c: "184 225 167" }
+    ];
+    const worlds = [
+      { x: 22, y: 18, x2: 78, y2: 76, tilt: -8, scale: 1.01 },
+      { x: 64, y: 16, x2: 18, y2: 82, tilt: 6, scale: 1.04 },
+      { x: 18, y: 68, x2: 82, y2: 22, tilt: -14, scale: 1.06 },
+      { x: 44, y: 18, x2: 72, y2: 84, tilt: 11, scale: 1.03 },
+      { x: 74, y: 34, x2: 24, y2: 76, tilt: -4, scale: 1.08 },
+      { x: 28, y: 28, x2: 82, y2: 62, tilt: 13, scale: 1.02 },
+      { x: 54, y: 78, x2: 16, y2: 26, tilt: -12, scale: 1.05 },
+      { x: 80, y: 18, x2: 36, y2: 82, tilt: 4, scale: 1.07 }
     ];
 
     let currentScene = null;
@@ -364,14 +384,27 @@
     function activateScene(scene, index) {
       if (!scene) return;
       const palette = palettes[Math.abs(index) % palettes.length];
+      const world = worlds[Math.abs(index) % worlds.length];
+      const sceneChanged = currentScene !== scene;
       root.style.setProperty("--mood-deep", palette.deep);
       root.style.setProperty("--mood-a", palette.a);
       root.style.setProperty("--mood-b", palette.b);
       root.style.setProperty("--mood-c", palette.c);
+      root.style.setProperty("--ambient-x", world.x + "%");
+      root.style.setProperty("--ambient-y", world.y + "%");
+      root.style.setProperty("--ambient-x2", world.x2 + "%");
+      root.style.setProperty("--ambient-y2", world.y2 + "%");
+      root.style.setProperty("--ambient-tilt", world.tilt + "deg");
+      root.style.setProperty("--ambient-scale", world.scale);
 
       if (currentScene && currentScene !== scene) currentScene.classList.remove("is-active");
       currentScene = scene;
       scene.classList.add("is-active");
+      if (sceneChanged) {
+        window.dispatchEvent(new CustomEvent("storyscenechange", {
+          detail: { scene: scene, index: index, palette: palette, world: world }
+        }));
+      }
 
       const photo = getScenePhoto(scene);
       if (photo && photo !== currentPhoto && photoLayers.length) {
@@ -395,6 +428,442 @@
       if (!value) return "";
       if (value.indexOf("url(") === 0) return value;
       return "url(\"" + value.replace(/"/g, "\\\"") + "\")";
+    }
+  }
+
+  /* ---------- 3C. LIVING TIMELINE + MEMORY CONSTELLATIONS ---------- */
+  function setupJourneyCanvas(hasGSAP) {
+    const constellationCanvas = document.getElementById("constellation-canvas");
+    const journeyCanvas = document.getElementById("journey-canvas");
+    if (!constellationCanvas || !journeyCanvas) return;
+
+    const constellationCtx = constellationCanvas.getContext("2d");
+    const journeyCtx = journeyCanvas.getContext("2d");
+    if (!constellationCtx || !journeyCtx) return;
+
+    const sceneEls = Array.prototype.slice.call(document.querySelectorAll(
+      ".hero, .chapter, .milestone, [data-moment], .wall-sec, .numbers, .letter, .finale"
+    ));
+    if (!sceneEls.length) return;
+
+    const memories = sceneEls.map(function (el, i) {
+      el.dataset.storyIndex = i;
+      return {
+        el: el,
+        index: i,
+        satellites: createSatellites(i),
+        baseSide: getBaseSide(el, i)
+      };
+    });
+    const stars = createStars(isSmall ? 52 : 110);
+    const root = document.documentElement;
+    const fallbackMood = { a: "111 160 255", b: "255 159 182", c: "255 210 122", deep: "8 14 38" };
+
+    let w = 0;
+    let h = 0;
+    let dpr = 1;
+    let scrollProgress = 0;
+    let activeIndex = 0;
+    let lastScenePulse = -1;
+    const pointer = { x: 0, y: 0, strength: 0 };
+
+    size();
+    updateState();
+    draw(performance.now());
+
+    addEventListener("resize", debounce(function () {
+      size();
+      updateState();
+      draw(performance.now());
+    }, 120));
+
+    addEventListener("pointermove", function (e) {
+      pointer.x = e.clientX;
+      pointer.y = e.clientY;
+      pointer.strength = isSmall ? 0 : 1;
+    }, { passive: true });
+
+    addEventListener("storyscenechange", function (e) {
+      if (e.detail && typeof e.detail.index === "number") {
+        activeIndex = e.detail.index;
+        if (lastScenePulse !== activeIndex) {
+          lastScenePulse = activeIndex;
+          const node = getNodes().filter(function (n) { return n.index === activeIndex; })[0];
+          if (node && node.y > -60 && node.y < h + 60) {
+            window.dispatchEvent(new CustomEvent("loveburst", {
+              detail: { x: node.x, y: node.y, count: 10, spread: 54 }
+            }));
+          }
+        }
+      }
+    });
+
+    if (reduceMotion) {
+      addEventListener("scroll", debounce(function () {
+        updateState();
+        draw(performance.now());
+      }, 40), { passive: true });
+      return;
+    }
+
+    requestAnimationFrame(loop);
+
+    function loop(now) {
+      updateState();
+      draw(now);
+      requestAnimationFrame(loop);
+    }
+
+    function size() {
+      dpr = Math.min(2, devicePixelRatio || 1);
+      w = innerWidth;
+      h = innerHeight;
+      [constellationCanvas, journeyCanvas].forEach(function (canvas) {
+        canvas.width = Math.floor(w * dpr);
+        canvas.height = Math.floor(h * dpr);
+        canvas.style.width = w + "px";
+        canvas.style.height = h + "px";
+      });
+      constellationCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      journeyCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function updateState() {
+      const doc = document.documentElement;
+      const max = Math.max(1, doc.scrollHeight - h);
+      scrollProgress = clamp(scrollY / max, 0, 1);
+      activeIndex = getActiveIndex();
+    }
+
+    function getActiveIndex() {
+      const focusY = h * 0.52;
+      let best = activeIndex;
+      let bestScore = -Infinity;
+
+      memories.forEach(function (memory) {
+        const rect = memory.el.getBoundingClientRect();
+        const visible = Math.max(0, Math.min(rect.bottom, h) - Math.max(rect.top, 0));
+        if (visible <= 0) return;
+        const center = rect.top + rect.height * 0.5;
+        const centerDistance = Math.abs(center - focusY);
+        const score = visible - centerDistance * 0.32;
+        if (score > bestScore) {
+          best = memory.index;
+          bestScore = score;
+        }
+      });
+
+      return best;
+    }
+
+    function getNodes() {
+      return memories.map(function (memory) {
+        const rect = memory.el.getBoundingClientRect();
+        const centerY = rect.top + rect.height * 0.5;
+        const localProgress = clamp((h * 0.78 - rect.top) / Math.max(1, rect.height + h * 0.56), 0, 1);
+        const drift = Math.sin(memory.index * 1.37 + scrollProgress * Math.PI * 2) * (isSmall ? 7 : 24);
+        const x = clamp(w * memory.baseSide + drift, isSmall ? 24 : 58, w - (isSmall ? 24 : 58));
+        const visited = memory.index < activeIndex || centerY < h * 0.58;
+        return {
+          index: memory.index,
+          el: memory.el,
+          x: x,
+          y: centerY,
+          localProgress: localProgress,
+          visited: visited,
+          active: memory.index === activeIndex,
+          satellites: memory.satellites
+        };
+      });
+    }
+
+    function draw(now) {
+      const nodes = getNodes();
+      const mood = readMood();
+      pointer.strength *= 0.94;
+
+      constellationCtx.clearRect(0, 0, w, h);
+      journeyCtx.clearRect(0, 0, w, h);
+
+      drawStarWorld(constellationCtx, now, mood);
+      drawMemoryConstellations(constellationCtx, nodes, now, mood);
+      drawFinalHeart(constellationCtx, now, mood);
+      drawJourneyPath(journeyCtx, nodes, now, mood);
+    }
+
+    function drawJourneyPath(ctx, nodes, now, mood) {
+      const overscan = h * 0.58;
+      const visibleNodes = nodes.filter(function (node) {
+        return node.y > -overscan && node.y < h + overscan;
+      });
+      if (!visibleNodes.length) return;
+
+      ctx.save();
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.shadowColor = rgba(mood.a, 0.42);
+      ctx.shadowBlur = 18;
+
+      if (visibleNodes.length > 1) {
+        ctx.globalAlpha = 0.22;
+        ctx.lineWidth = isSmall ? 1.2 : 1.7;
+        ctx.strokeStyle = rgba(mood.c, 0.46);
+        drawSpline(ctx, visibleNodes);
+      }
+
+      const liveNodes = visibleNodes.filter(function (node) { return node.index <= activeIndex + 1; });
+      if (liveNodes.length > 1) {
+        const grad = ctx.createLinearGradient(0, 0, w, h);
+        grad.addColorStop(0, rgba(mood.a, 0.94));
+        grad.addColorStop(0.56, rgba(mood.b, 0.84));
+        grad.addColorStop(1, rgba(mood.c, 0.92));
+        ctx.globalAlpha = 0.74;
+        ctx.lineWidth = isSmall ? 2.1 : 3.2;
+        ctx.strokeStyle = grad;
+        drawSpline(ctx, liveNodes);
+      }
+
+      visibleNodes.forEach(function (node) {
+        const pulse = node.active ? 0.5 + 0.5 * Math.sin(now * 0.004) : 0;
+        const alpha = node.active ? 0.95 : (node.visited ? 0.62 : 0.22);
+        const radius = (node.active ? 5.5 + pulse * 3.2 : node.visited ? 3.6 : 2.2) * (isSmall ? 0.72 : 1);
+
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = node.active ? rgba(mood.c, 0.96) : rgba(mood.a, 0.86);
+        ctx.shadowColor = node.active ? rgba(mood.c, 0.9) : rgba(mood.a, 0.46);
+        ctx.shadowBlur = node.active ? 22 : 12;
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (node.active) {
+          ctx.globalAlpha = 0.38 + pulse * 0.28;
+          ctx.lineWidth = 1.3;
+          ctx.strokeStyle = rgba(mood.b, 0.88);
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, 18 + pulse * 12, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.restore();
+      });
+
+      ctx.restore();
+    }
+
+    function drawMemoryConstellations(ctx, nodes, now, mood) {
+      const overscan = h * 0.32;
+      nodes.forEach(function (node) {
+        if (node.y < -overscan || node.y > h + overscan) return;
+        const activeBoost = node.active ? 1 : 0;
+        const baseAlpha = node.active ? 0.72 : (node.visited ? 0.3 : 0.13);
+        const orbit = 1 + Math.sin(now * 0.0012 + node.index) * 0.045;
+
+        ctx.save();
+        ctx.lineCap = "round";
+        node.satellites.forEach(function (sat, i) {
+          const sway = Math.sin(now * 0.0008 + sat.phase + scrollProgress * 3) * 0.11;
+          const distance = sat.distance * orbit * (1 + activeBoost * 0.14);
+          const sx = node.x + Math.cos(sat.angle + sway) * distance;
+          const sy = node.y + Math.sin(sat.angle + sway) * distance * 0.72;
+          const twinkle = 0.58 + 0.42 * Math.sin(now * sat.speed + sat.phase);
+
+          ctx.globalAlpha = baseAlpha * (0.42 + twinkle * 0.58);
+          ctx.strokeStyle = i % 2 ? rgba(mood.a, 0.72) : rgba(mood.b, 0.66);
+          ctx.lineWidth = node.active ? 0.95 : 0.62;
+          ctx.beginPath();
+          ctx.moveTo(node.x, node.y);
+          ctx.lineTo(sx, sy);
+          ctx.stroke();
+
+          ctx.globalAlpha = baseAlpha * (0.7 + twinkle * 0.3);
+          ctx.fillStyle = i % 3 ? rgba(mood.c, 0.92) : rgba(mood.a, 0.88);
+          ctx.shadowColor = ctx.fillStyle;
+          ctx.shadowBlur = node.active ? 14 : 6;
+          ctx.beginPath();
+          ctx.arc(sx, sy, sat.size * (node.active ? 1.2 : 1), 0, Math.PI * 2);
+          ctx.fill();
+        });
+        ctx.restore();
+      });
+    }
+
+    function drawStarWorld(ctx, now, mood) {
+      ctx.save();
+      stars.forEach(function (star, i) {
+        const driftX = (scrollProgress - 0.5) * star.drift;
+        const driftY = Math.sin(scrollProgress * Math.PI * 2 + star.phase) * star.drift * 0.12;
+        const px = star.x * w + driftX + Math.sin(now * 0.00018 + star.phase) * star.float;
+        const py = star.y * h + driftY + Math.cos(now * 0.0002 + star.phase) * star.float * 0.6;
+        const pull = pointer.strength * Math.max(0, 1 - distance(px, py, pointer.x, pointer.y) / 220);
+        const x = px + (pointer.x - px) * pull * 0.055;
+        const y = py + (pointer.y - py) * pull * 0.055;
+        const twinkle = 0.45 + 0.55 * Math.sin(now * star.speed + star.phase);
+
+        ctx.globalAlpha = star.alpha * (0.38 + twinkle * 0.62) * (1 + pull * 1.4);
+        ctx.fillStyle = i % 3 === 0 ? rgba(mood.b, 0.9) : (i % 3 === 1 ? rgba(mood.a, 0.9) : rgba(mood.c, 0.86));
+        ctx.shadowColor = ctx.fillStyle;
+        ctx.shadowBlur = 8 + pull * 18;
+        ctx.beginPath();
+        ctx.arc(x, y, star.size * (1 + pull * 1.4), 0, Math.PI * 2);
+        ctx.fill();
+
+        if (i % 11 === 0 && !isSmall) {
+          const mate = stars[(i + 7) % stars.length];
+          const mx = mate.x * w + (scrollProgress - 0.5) * mate.drift;
+          const my = mate.y * h;
+          const d = distance(x, y, mx, my);
+          if (d < 170) {
+            ctx.globalAlpha = 0.045 * (1 - d / 170);
+            ctx.strokeStyle = rgba(mood.a, 0.7);
+            ctx.lineWidth = 0.65;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(mx, my);
+            ctx.stroke();
+          }
+        }
+      });
+      ctx.restore();
+    }
+
+    function drawFinalHeart(ctx, now, mood) {
+      const reveal = clamp((scrollProgress - 0.82) / 0.16, 0, 1);
+      if (reveal <= 0) return;
+
+      const cx = w * (isSmall ? 0.5 : 0.72);
+      const cy = h * (isSmall ? 0.44 : 0.5);
+      const scale = Math.min(w, h) * (isSmall ? 0.0058 : 0.0085);
+      const count = 24;
+      const points = [];
+
+      for (let i = 0; i < count; i++) {
+        const t = (Math.PI * 2 * i) / count;
+        const x = 16 * Math.pow(Math.sin(t), 3);
+        const y = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+        points.push({
+          x: cx + x * scale * 10,
+          y: cy + y * scale * 10,
+          phase: i * 0.41
+        });
+      }
+
+      ctx.save();
+      ctx.globalAlpha = reveal * 0.5;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.strokeStyle = rgba(mood.b, 0.78);
+      ctx.fillStyle = rgba(mood.c, 0.94);
+      ctx.shadowColor = rgba(mood.b, 0.82);
+      ctx.shadowBlur = 16;
+      ctx.lineWidth = isSmall ? 1 : 1.35;
+      ctx.beginPath();
+      points.forEach(function (point, i) {
+        const beat = Math.sin(now * 0.002 + point.phase) * reveal * 1.8;
+        const x = point.x + beat;
+        const y = point.y - beat * 0.55;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.closePath();
+      ctx.stroke();
+
+      points.forEach(function (point) {
+        const twinkle = 0.72 + 0.28 * Math.sin(now * 0.003 + point.phase);
+        ctx.globalAlpha = reveal * twinkle;
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, isSmall ? 1.5 : 2.1, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.restore();
+    }
+
+    function drawSpline(ctx, points) {
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) {
+        const prev = points[i - 1];
+        const cur = points[i];
+        const midX = (prev.x + cur.x) / 2;
+        const midY = (prev.y + cur.y) / 2;
+        ctx.quadraticCurveTo(prev.x, prev.y, midX, midY);
+      }
+      const last = points[points.length - 1];
+      ctx.lineTo(last.x, last.y);
+      ctx.stroke();
+    }
+
+    function getBaseSide(el, i) {
+      if (isSmall) return 0.12;
+      if (el.classList.contains("hero")) return 0.5;
+      if (el.classList.contains("chapter")) return 0.12;
+      if (el.classList.contains("milestone")) return 0.5;
+      if (el.classList.contains("letter") || el.classList.contains("finale")) return 0.5;
+      if (el.classList.contains("wall-sec") || el.classList.contains("numbers")) return 0.84;
+      if (el.classList.contains("reverse")) return 0.82;
+      if (el.matches("[data-moment]")) return 0.18;
+      return 0.18 + (i % 4) * 0.18;
+    }
+
+    function createSatellites(seed) {
+      const total = 5 + (seed % 4);
+      const sats = [];
+      for (let i = 0; i < total; i++) {
+        sats.push({
+          angle: rand(seed * 31 + i * 7) * Math.PI * 2,
+          distance: (isSmall ? 20 : 28) + rand(seed * 19 + i * 13) * (isSmall ? 32 : 62),
+          size: 0.9 + rand(seed * 23 + i * 5) * 1.8,
+          phase: rand(seed * 29 + i * 17) * Math.PI * 2,
+          speed: 0.0018 + rand(seed * 37 + i * 3) * 0.0024
+        });
+      }
+      return sats;
+    }
+
+    function createStars(count) {
+      const out = [];
+      for (let i = 0; i < count; i++) {
+        out.push({
+          x: rand(i * 17 + 4),
+          y: rand(i * 29 + 7),
+          size: 0.65 + rand(i * 13 + 2) * (isSmall ? 1.2 : 1.9),
+          alpha: 0.18 + rand(i * 23 + 8) * 0.42,
+          phase: rand(i * 31 + 5) * Math.PI * 2,
+          speed: 0.0008 + rand(i * 11 + 9) * 0.0025,
+          drift: (rand(i * 43 + 1) - 0.5) * (isSmall ? 34 : 92),
+          float: 4 + rand(i * 47 + 6) * (isSmall ? 6 : 16)
+        });
+      }
+      return out;
+    }
+
+    function readMood() {
+      const styles = getComputedStyle(root);
+      return {
+        a: styles.getPropertyValue("--mood-a").trim() || fallbackMood.a,
+        b: styles.getPropertyValue("--mood-b").trim() || fallbackMood.b,
+        c: styles.getPropertyValue("--mood-c").trim() || fallbackMood.c,
+        deep: styles.getPropertyValue("--mood-deep").trim() || fallbackMood.deep
+      };
+    }
+
+    function rgba(channels, alpha) {
+      return "rgba(" + channels.replace(/\s+/g, ",") + "," + alpha + ")";
+    }
+
+    function rand(seed) {
+      const x = Math.sin(seed * 999.917) * 10000;
+      return x - Math.floor(x);
+    }
+
+    function distance(x1, y1, x2, y2) {
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
     }
   }
 
