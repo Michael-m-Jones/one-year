@@ -1319,9 +1319,10 @@
   (function trail() {
     const canvas = document.getElementById("trail");
     if (!canvas || isSmall || reduceMotion) return;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { alpha: true, desynchronized: true });
     const colors = ["#f8fbff", "#dceaff", "#a9c9ff", "#6fa0ff", "#c7dcff"];
-    let w, h, dpr = 1, particles = [], last = null;
+    const MAX_PARTICLES = 155;
+    let w, h, dpr = 1, particles = [], last = null, pointer = null, ticking = false;
 
     function size() {
       dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -1334,32 +1335,59 @@
     size(); addEventListener("resize", size);
 
     addEventListener("pointermove", function (e) {
-      const now = performance.now();
-      const dx = last ? e.clientX - last.x : 0;
-      const dy = last ? e.clientY - last.y : 0;
+      const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+      const point = events[events.length - 1] || e;
+      pointer = { x: point.clientX, y: point.clientY };
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(emitTrail);
+      }
+    }, { passive: true });
+
+    addEventListener("pointerleave", function () {
+      last = null;
+      pointer = null;
+    });
+
+    addEventListener("blur", function () {
+      last = null;
+      pointer = null;
+    });
+
+    function emitTrail(now) {
+      ticking = false;
+      if (!pointer) return;
+
+      const dx = last ? pointer.x - last.x : 0;
+      const dy = last ? pointer.y - last.y : 0;
       const dist = Math.hypot(dx, dy);
-      const dt = last ? Math.max(16, now - last.t) : 16;
-      const speed = Math.min(46, dist / (dt / 16.67));
 
       if (!last) {
-        addHeart(e.clientX, e.clientY, 0, 0, 10);
-        last = { x: e.clientX, y: e.clientY, t: now };
+        addHeart(pointer.x, pointer.y, 0, 0, 9);
+        last = { x: pointer.x, y: pointer.y, t: now };
         return;
       }
 
-      if (dist < 2 && now - last.t < 28) return;
+      if (dist < 1.5) return;
+      if (now - last.t > 180 || dist > 360) {
+        addHeart(pointer.x, pointer.y, 0, 0, 9);
+        last = { x: pointer.x, y: pointer.y, t: now };
+        return;
+      }
 
-      const spacing = speed > 24 ? 9 : speed > 10 ? 11 : 14;
-      const count = Math.max(1, Math.min(5, Math.ceil(dist / spacing)));
+      const dt = Math.max(16, now - last.t);
+      const speed = Math.min(44, dist / (dt / 16.67));
+      const spacing = speed > 24 ? 8.5 : speed > 10 ? 10.5 : 13;
+      const count = Math.max(1, Math.min(4, Math.ceil(dist / spacing)));
       for (let i = 1; i <= count; i++) {
         const p = i / count;
         const x = last.x + dx * p;
         const y = last.y + dy * p;
         addHeart(x, y, dx, dy, speed);
-        if (speed > 13 && (i === count || i % 2 === 0)) addSpark(x, y, dx, dy);
+        if (speed > 24 && i === count) addSpark(x, y, dx, dy);
       }
-      last = { x: e.clientX, y: e.clientY, t: now };
-    }, { passive: true });
+      last = { x: pointer.x, y: pointer.y, t: now };
+    }
 
     addEventListener("pointerdown", function (e) {
       burstAt(e.clientX, e.clientY, 14, 0);
@@ -1371,8 +1399,9 @@
     });
 
     function burstAt(x, y, count, spread) {
-      for (let i = 0; i < count; i++) {
-        const angle = (Math.PI * 2 * i) / count;
+      const total = Math.min(count, 22);
+      for (let i = 0; i < total; i++) {
+        const angle = (Math.PI * 2 * i) / total;
         const ox = spread ? (Math.random() - 0.5) * spread : 0;
         const oy = spread ? (Math.random() - 0.5) * spread * 0.65 : 0;
         particles.push({
@@ -1389,23 +1418,24 @@
           color: colors[i % colors.length]
         });
       }
+      trimParticles();
     }
 
     function addHeart(x, y, dx, dy, speed) {
       particles.push({
         type: "heart",
-        x: x + (Math.random() - 0.5) * 5,
-        y: y + (Math.random() - 0.5) * 5,
-        vx: -dx * 0.012 + (Math.random() - 0.5) * 0.9,
-        vy: -dy * 0.012 - 0.28 - Math.random() * 0.65,
-        size: 8 + Math.random() * 9 + speed * 0.18,
+        x: x + (Math.random() - 0.5) * 3,
+        y: y + (Math.random() - 0.5) * 3,
+        vx: -dx * 0.004 + (Math.random() - 0.5) * 0.55,
+        vy: -dy * 0.004 - 0.18 - Math.random() * 0.42,
+        size: 7 + Math.random() * 7 + speed * 0.12,
         life: 1,
-        decay: 0.012 + Math.random() * 0.007,
-        rot: Math.atan2(dy, dx || 1) + (Math.random() - 0.5) * 0.9,
-        spin: (Math.random() - 0.5) * 0.08,
+        decay: 0.016 + Math.random() * 0.007,
+        rot: Math.atan2(dy, dx || 1) + (Math.random() - 0.5) * 0.65,
+        spin: (Math.random() - 0.5) * 0.055,
         color: colors[Math.floor(Math.random() * colors.length)]
       });
-      if (particles.length > 220) particles.splice(0, particles.length - 220);
+      trimParticles();
     }
 
     function addSpark(x, y, dx, dy) {
@@ -1422,10 +1452,16 @@
         spin: (Math.random() - 0.5) * 0.16,
         color: colors[Math.floor(Math.random() * colors.length)]
       });
+      trimParticles();
+    }
+
+    function trimParticles() {
+      if (particles.length > MAX_PARTICLES) particles.splice(0, particles.length - MAX_PARTICLES);
     }
 
     function drawHeart(p) {
       const s = p.size / 18;
+      const life = Math.max(0, p.life);
       ctx.save();
       ctx.translate(p.x, p.y);
       ctx.rotate(p.rot);
@@ -1437,13 +1473,15 @@
       ctx.closePath();
       ctx.fillStyle = p.color;
       ctx.shadowColor = p.color;
-      ctx.shadowBlur = 22 * p.life;
-      ctx.globalAlpha = Math.max(0, p.life) * 0.95;
+      ctx.shadowBlur = life > 0.35 ? 12 * life : 0;
+      ctx.globalAlpha = life * 0.95;
       ctx.fill();
-      ctx.globalAlpha = Math.max(0, p.life) * 0.26;
-      ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = 1.3;
-      ctx.stroke();
+      if (life > 0.45) {
+        ctx.globalAlpha = life * 0.2;
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 0.9;
+        ctx.stroke();
+      }
       ctx.restore();
     }
 
@@ -1455,7 +1493,7 @@
       ctx.globalAlpha = Math.max(0, p.life) * 0.86;
       ctx.lineWidth = 1.7;
       ctx.shadowColor = p.color;
-      ctx.shadowBlur = 8;
+      ctx.shadowBlur = 4;
       ctx.beginPath();
       ctx.moveTo(-p.size, 0);
       ctx.lineTo(p.size, 0);
@@ -1467,6 +1505,7 @@
 
     function loop() {
       ctx.clearRect(0, 0, innerWidth, innerHeight);
+      let write = 0;
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
         p.life -= p.decay;
@@ -1478,8 +1517,9 @@
         p.rot += p.spin;
         if (p.type === "heart") drawHeart(p);
         else drawSpark(p);
+        particles[write++] = p;
       }
-      particles = particles.filter(function (p) { return p.life > 0; });
+      particles.length = write;
       requestAnimationFrame(loop);
     }
     loop();
