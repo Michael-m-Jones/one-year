@@ -439,7 +439,7 @@ section[data-section]::selection{background:rgba(255,159,182,.35)}
 .moment{display:grid;grid-template-columns:1fr 1fr;gap:6vw;align-items:center;min-height:88vh;perspective:1400px;transform-style:preserve-3d}
 .moment{transition:opacity .75s ease, filter .75s ease}
 .moment.reverse .moment-media{order:2}
-.moment-media{position:relative;isolation:isolate;transform-style:preserve-3d;will-change:transform,filter}
+.moment-media{position:relative;isolation:isolate;transform-style:preserve-3d;will-change:transform}
 .moment-media::before{
   content:"";position:absolute;inset:8% -6% -7% 10%;z-index:-1;border-radius:24px;
   background:linear-gradient(135deg, rgba(111,160,255,.2), rgba(255,159,182,.13));

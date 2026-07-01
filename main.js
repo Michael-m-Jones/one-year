@@ -180,8 +180,6 @@
         gsap.fromTo(media, { rotateZ: dir * -3, rotateY: dir * 7, rotateX: -2, y: 42, z: -80 },
           { rotateZ: dir * 2.8, rotateY: dir * -7, rotateX: 2, y: -42, z: 70, ease: "none",
             scrollTrigger: { trigger: media.closest("[data-moment]"), start: "top bottom", end: "bottom top", scrub: true } });
-        gsap.to(media, { filter: "drop-shadow(0 42px 46px rgba(0,0,0,.38))", duration: 0.4,
-          scrollTrigger: { trigger: media.closest("[data-moment]"), start: "top 70%", end: "top 35%", scrub: true } });
       });
 
       // Chapter titles drift a touch (parallax)
@@ -252,13 +250,14 @@
     gsap.set(".book-page-turn", { rotateY: 0, rotateZ: 0, skewY: 0, scaleX: 1, x: 0, z: 0, autoAlpha: 0, transformOrigin: "0% 50%" });
     gsap.set(".book-page-curl, .book-page-cast", { autoAlpha: 0, x: 0, scaleX: 1 });
     gsap.set(".book-light", { autoAlpha: 0, scale: 0.86 });
-    gsap.set(".hero-dive-photo", { autoAlpha: 0, scale: 1.16, xPercent: 2, yPercent: 2, filter: "saturate(1.22) brightness(.8) blur(2px)" });
+    gsap.set(".hero-dive-photo", { autoAlpha: 0, scale: 1.12, xPercent: 1, yPercent: 1, filter: "saturate(1.28) brightness(.94)" });
     gsap.set(".hero-photo", { autoAlpha: 1, scale: 1.08 });
     gsap.set(".portal-haze", { scale: 0.94, opacity: 0.52 });
-    gsap.set(".memory-card", { autoAlpha: 0, y: 28, scale: 0.86, rotateZ: function (i) { return [-16, 14, 10, -18][i] || 0; } });
+    gsap.set(".memory-card", { autoAlpha: 0, y: 16, scale: 0.92, rotateZ: function (i) { return [-14, 12, 9, -15][i] || 0; } });
     gsap.set(".hero-content", { autoAlpha: 0, y: 38, scale: 0.97 });
 
     const openBook = gsap.timeline({
+      paused: true,
       defaults: { ease: "power3.inOut" },
       onUpdate: function () {
         root.style.setProperty("--book-progress", openBook.progress().toFixed(4));
@@ -285,11 +284,7 @@
       .to(".book-page-turn", { autoAlpha: 1, rotateY: 0, rotateZ: 0.2, z: 16, duration: 0.2, ease: "power2.out" }, 2.42)
       .to(".book-page-curl", { autoAlpha: 0.78, scaleX: 1.1, duration: 0.24, ease: "sine.out" }, 2.48)
       .to(".book-page-cast", { autoAlpha: 0.38, x: -6, scaleX: 1.16, duration: 0.28, ease: "sine.out" }, 2.5)
-      .to(".memory-card", { autoAlpha: 0.72, y: 0, scale: 1, stagger: 0.05, duration: 0.32, ease: "power2.out" }, 2.54)
-      .to(".card-a", { x: -112, y: -68, rotateZ: -24, scale: 1.08, duration: 0.72, ease: "sine.inOut" }, 2.62)
-      .to(".card-b", { x: 116, y: -72, rotateZ: 22, scale: 1.08, duration: 0.72, ease: "sine.inOut" }, 2.62)
-      .to(".card-c", { x: -126, y: 78, rotateZ: 17, scale: 1.06, duration: 0.72, ease: "sine.inOut" }, 2.62)
-      .to(".card-d", { x: 126, y: 80, rotateZ: -22, scale: 1.06, duration: 0.72, ease: "sine.inOut" }, 2.62)
+      .to(".memory-card", { autoAlpha: 0.48, y: 0, scale: 0.98, stagger: 0.08, duration: 0.78, ease: "power2.out" }, 2.7)
       .to(".book-page-turn", { rotateY: -76, rotateZ: -2.6, skewY: -3.2, x: -5, z: 80, scaleX: 0.96, duration: 0.68, ease: "sine.inOut" }, 2.88)
       .to(".book-page-curl", { x: -16, scaleX: 1.44, autoAlpha: 0.86, duration: 0.68, ease: "sine.inOut" }, 2.88)
       .to(".book-page-cast", { autoAlpha: 0.5, x: -42, scaleX: 1.58, duration: 0.6, ease: "sine.inOut" }, 2.88)
@@ -297,8 +292,8 @@
       .to(".book-page-curl", { autoAlpha: 0.08, x: -50, scaleX: 0.78, duration: 0.26, ease: "sine.in" }, 3.82)
       .to(".book-page-cast", { autoAlpha: 0, x: -92, scaleX: 1.2, duration: 0.26, ease: "power2.out" }, 3.84)
       .to(".portal-haze", { scale: 1.62, opacity: 1, duration: 0.7, ease: "sine.inOut" }, 3.88)
-      .to(".hero-dive-photo", { autoAlpha: 0.88, scale: 1.01, xPercent: 0, yPercent: 0, filter: "saturate(1.3) brightness(.96) blur(0px)", duration: 0.74, ease: "sine.inOut" }, 3.96)
-      .to(".hero-photo", { autoAlpha: 0.16, scale: 1.16, yPercent: 4, filter: "saturate(1.12) brightness(.74)", duration: 0.68, ease: "sine.inOut" }, 3.96)
+      .to(".hero-dive-photo", { autoAlpha: 0.88, scale: 1.01, xPercent: 0, yPercent: 0, duration: 0.74, ease: "sine.inOut" }, 3.96)
+      .to(".hero-photo", { autoAlpha: 0.16, scale: 1.16, yPercent: 4, duration: 0.68, ease: "sine.inOut" }, 3.96)
       .to(".book-orbit", { xPercent: -15, yPercent: -7, rotateX: 25, rotateZ: 0.6, y: -46, scale: 1.42, duration: 0.7, ease: "power3.inOut" }, 4.08)
       .to(".book-spread", { xPercent: -8, y: -22, scale: 1.18, duration: 0.68, ease: "power3.inOut" }, 4.08)
       .to(".memory-card", { autoAlpha: 0, scale: 1.14, duration: 0.38, ease: "power2.in" }, 4.24)
@@ -306,6 +301,46 @@
       .to(".book-page-turn", { autoAlpha: 0, duration: 0.22, ease: "power2.out" }, 4.42)
       .to(".book-stage", { scale: 2.18, xPercent: -16, yPercent: -8, z: 700, autoAlpha: 0, duration: 0.78, ease: "power4.inOut" }, 4.56)
       .to(".hero-content", { autoAlpha: 1, y: 0, scale: 1, duration: 0.58, ease: "power2.out" }, 4.96);
+
+    preloadOpeningAssets(bookStage).then(function () {
+      openBook.play(0);
+    });
+  }
+
+  function preloadOpeningAssets(bookStage) {
+    const nodes = Array.prototype.slice.call(document.querySelectorAll(".hero-photo, .hero-dive-photo"))
+      .concat(Array.prototype.slice.call(bookStage.querySelectorAll(".book-photo, .book-page-turn-photo, .memory-card")));
+    const urls = [];
+
+    nodes.forEach(function (el) {
+      const url = getBackgroundUrl(el);
+      if (url && urls.indexOf(url) === -1) urls.push(url);
+    });
+
+    if (!urls.length) return Promise.resolve();
+    return Promise.race([
+      Promise.all(urls.map(preloadImageUrl)),
+      new Promise(function (resolve) { setTimeout(resolve, 650); })
+    ]);
+  }
+
+  function getBackgroundUrl(el) {
+    const bg = el.style.backgroundImage || getComputedStyle(el).backgroundImage;
+    const match = bg && bg.match(/url\((['"]?)(.*?)\1\)/);
+    if (!match || !match[2]) return "";
+    try { return new URL(match[2], document.baseURI).href; }
+    catch (e) { return match[2]; }
+  }
+
+  function preloadImageUrl(src) {
+    return new Promise(function (resolve) {
+      const img = new Image();
+      img.decoding = "async";
+      img.onload = resolve;
+      img.onerror = resolve;
+      img.src = src;
+      if (img.decode) img.decode().then(resolve).catch(resolve);
+    });
   }
 
   /* ---------- 3A. IMAGE LOADING: keep the scroll story from outrunning photos ---------- */
