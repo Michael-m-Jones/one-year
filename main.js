@@ -157,9 +157,9 @@
         gsap.set(".book-stage, .book-orbit, .book-spread, .book-cover, .book-page-turn, .book-page-turn-front, .book-page-turn-back, .book-page-curl, .book-page-cast, .book-light, .memory-card, .hero-dive-photo", { force3D: true });
         gsap.set(".book-stage", { scale: 1, z: 0, xPercent: 0, yPercent: 0, autoAlpha: 1, transformOrigin: "62% 48%" });
         gsap.set(".book-orbit", { rotateX: 61, rotateZ: -3.5, xPercent: 0, y: 50, scale: 0.78, transformOrigin: "62% 52%" });
-        gsap.set(".book-spread", { autoAlpha: 0.52, scale: 0.8, y: 34, rotateX: 0, transformOrigin: "62% 50%" });
+        gsap.set(".book-spread", { autoAlpha: 0, scale: 0.8, y: 34, rotateX: 0, transformOrigin: "62% 50%" });
         gsap.set(".book-cover", { rotateY: 0, rotateZ: 0, x: 0, z: 0, autoAlpha: 1, transformOrigin: "0% 50%" });
-        gsap.set(".book-page-turn", { rotateY: 0, rotateZ: 0, skewY: 0, scaleX: 1, x: 0, z: 0, autoAlpha: 1, transformOrigin: "0% 50%" });
+        gsap.set(".book-page-turn", { rotateY: 0, rotateZ: 0, skewY: 0, scaleX: 1, x: 0, z: 0, autoAlpha: 0, transformOrigin: "0% 50%" });
         gsap.set(".book-page-curl, .book-page-cast", { autoAlpha: 0, x: 0, scaleX: 1 });
         gsap.set(".book-light", { autoAlpha: 0, scale: 0.88 });
         gsap.set(".hero-dive-photo", { autoAlpha: 0, scale: 1.18, xPercent: 3, yPercent: 2, filter: "saturate(1.28) brightness(.82) blur(2px)" });
@@ -183,18 +183,19 @@
         });
 
         openBook
-          .to(".memory-card", { autoAlpha: 0.82, y: 0, scale: 1, stagger: 0.04, ease: "power2.out", duration: 0.16 }, 0)
           .to(".book-orbit", { rotateX: 50, rotateZ: -4.8, y: 12, scale: 1.05, ease: "sine.out", duration: 0.22 }, 0)
-          .to(".book-spread", { autoAlpha: 0.82, scale: 0.96, y: 8, ease: "power2.out", duration: 0.22 }, 0.02)
+          .to(".book-spread", { autoAlpha: 0.82, scale: 0.96, y: 8, ease: "power2.out", duration: 0.22 }, 0.14)
+          .to(".book-page-turn", { autoAlpha: 1, ease: "power2.out", duration: 0.12 }, 0.16)
           .to(".book-cover", { rotateY: -82, rotateZ: -0.6, x: -4, z: 28, ease: "power2.inOut", duration: 0.24 }, 0.08)
           .to(".book-cover", { rotateY: -116, rotateZ: -1.4, x: -12, z: 12, autoAlpha: 0.14, ease: "power2.inOut", duration: 0.2 }, 0.28)
           .to(".book-orbit", { rotateX: 38, rotateZ: -2.6, y: -28, scale: 1.28, ease: "power2.inOut", duration: 0.28 }, 0.28)
           .to(".book-spread", { autoAlpha: 1, scale: 1.08, y: -10, ease: "power2.inOut", duration: 0.28 }, 0.28)
           .to(".book-light", { autoAlpha: 0.58, scale: 1.1, ease: "sine.out", duration: 0.22 }, 0.34)
-          .to(".card-a", { x: -122, y: -74, rotateZ: -27, scale: 1.1, ease: "sine.inOut", duration: 0.38 }, 0.2)
-          .to(".card-b", { x: 126, y: -78, rotateZ: 24, scale: 1.09, ease: "sine.inOut", duration: 0.38 }, 0.2)
-          .to(".card-c", { x: -136, y: 90, rotateZ: 19, scale: 1.07, ease: "sine.inOut", duration: 0.38 }, 0.2)
-          .to(".card-d", { x: 132, y: 88, rotateZ: -24, scale: 1.08, ease: "sine.inOut", duration: 0.38 }, 0.2)
+          .to(".memory-card", { autoAlpha: 0.82, y: 0, scale: 1, stagger: 0.04, ease: "power2.out", duration: 0.16 }, 0.42)
+          .to(".card-a", { x: -122, y: -74, rotateZ: -27, scale: 1.1, ease: "sine.inOut", duration: 0.38 }, 0.44)
+          .to(".card-b", { x: 126, y: -78, rotateZ: 24, scale: 1.09, ease: "sine.inOut", duration: 0.38 }, 0.44)
+          .to(".card-c", { x: -136, y: 90, rotateZ: 19, scale: 1.07, ease: "sine.inOut", duration: 0.38 }, 0.44)
+          .to(".card-d", { x: 132, y: 88, rotateZ: -24, scale: 1.08, ease: "sine.inOut", duration: 0.38 }, 0.44)
           .to(".portal-haze", { scale: 1.18, opacity: 0.78, ease: "sine.inOut", duration: 0.3 }, 0.28)
           .to(".book-page-turn", { autoAlpha: 1, rotateY: -8, rotateZ: 0.8, z: 10, ease: "power2.out", duration: 0.1 }, 0.66)
           .to(".book-page-curl", { autoAlpha: 0.86, scaleX: 1.14, ease: "sine.out", duration: 0.14 }, 0.66)

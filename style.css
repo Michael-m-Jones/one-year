@@ -268,7 +268,7 @@ section[data-section]::selection{background:rgba(255,159,182,.35)}
 .memory-card{
   position:absolute;z-index:0;width:clamp(92px,10vw,150px);aspect-ratio:3/4;border:8px solid rgba(255,248,232,.94);
   border-bottom-width:22px;border-radius:8px;background-size:cover;background-position:center;
-  box-shadow:0 28px 60px -32px rgba(0,0,0,.82);opacity:.72;will-change:transform,opacity,filter;
+  box-shadow:0 28px 60px -32px rgba(0,0,0,.82);opacity:0;visibility:hidden;will-change:transform,opacity,filter;
   filter:saturate(.95) brightness(.92)
 }
 .memory-card::after{content:"";position:absolute;inset:-8px;border-radius:8px;background:linear-gradient(135deg,rgba(255,255,255,.28),transparent 38%);pointer-events:none}
@@ -280,7 +280,7 @@ section[data-section]::selection{background:rgba(255,159,182,.35)}
 .book-shadow{position:absolute;left:15%;right:15%;bottom:4%;height:18%;border-radius:50%;
   background:radial-gradient(ellipse at center, rgba(0,0,0,.48), transparent 70%);filter:blur(12px);transform:rotateX(64deg)}
 .book-spread{position:absolute;inset:8% 2%;display:grid;grid-template-columns:1fr 1fr;gap:2px;
-  border-radius:18px;overflow:hidden;transform-style:preserve-3d;
+  border-radius:18px;overflow:hidden;opacity:0;visibility:hidden;transform-style:preserve-3d;
   background:linear-gradient(90deg,#d9d0bd,#fff7e7 48%,#d8cdb8 52%,#fff2dc);
   box-shadow:0 42px 90px -40px rgba(0,0,0,.8), inset 0 0 0 1px rgba(255,255,255,.38);z-index:1}
 .book-spread::before{
@@ -301,7 +301,7 @@ section[data-section]::selection{background:rgba(255,159,182,.35)}
 .book-page-turn{
   position:absolute;top:8%;left:50%;width:48%;height:84%;z-index:5;overflow:visible;
   border-radius:8px 18px 18px 8px;transform-origin:left center;transform-style:preserve-3d;
-  opacity:0;will-change:transform,opacity;backface-visibility:visible;
+  opacity:0;visibility:hidden;will-change:transform,opacity;backface-visibility:visible;
 }
 .book-page-turn-front,.book-page-turn-back{
   position:absolute;inset:0;border-radius:8px 18px 18px 8px;overflow:hidden;
