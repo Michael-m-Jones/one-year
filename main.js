@@ -1321,8 +1321,8 @@
     if (!canvas || isSmall || reduceMotion) return;
     const ctx = canvas.getContext("2d", { alpha: true, desynchronized: true });
     const colors = ["#f8fbff", "#dceaff", "#a9c9ff", "#6fa0ff", "#c7dcff"];
-    const MAX_PARTICLES = 155;
-    let w, h, dpr = 1, particles = [], last = null, pointer = null, ticking = false;
+    const MAX_PARTICLES = 145;
+    let w, h, dpr = 1, particles = [], last = null, pointer = null, lastSpark = 0;
 
     function size() {
       dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -1337,11 +1337,7 @@
     addEventListener("pointermove", function (e) {
       const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
       const point = events[events.length - 1] || e;
-      pointer = { x: point.clientX, y: point.clientY };
-      if (!ticking) {
-        ticking = true;
-        requestAnimationFrame(emitTrail);
-      }
+      emitTrail(point.clientX, point.clientY, performance.now());
     }, { passive: true });
 
     addEventListener("pointerleave", function () {
@@ -1354,39 +1350,42 @@
       pointer = null;
     });
 
-    function emitTrail(now) {
-      ticking = false;
-      if (!pointer) return;
-
-      const dx = last ? pointer.x - last.x : 0;
-      const dy = last ? pointer.y - last.y : 0;
+    function emitTrail(x, y, now) {
+      const dx = last ? x - last.x : 0;
+      const dy = last ? y - last.y : 0;
       const dist = Math.hypot(dx, dy);
 
       if (!last) {
-        addHeart(pointer.x, pointer.y, 0, 0, 9);
-        last = { x: pointer.x, y: pointer.y, t: now };
+        pointer = { x: x, y: y, t: now, speed: 9, angle: 0 };
+        addHeart(x, y, 0, 0, 9, true);
+        last = { x: x, y: y, t: now };
         return;
       }
 
-      if (dist < 1.5) return;
+      const dt = Math.max(8, now - last.t);
+      const speed = Math.min(50, dist / (dt / 16.67));
+      pointer = { x: x, y: y, t: now, speed: speed, angle: Math.atan2(dy, dx || 1) };
+
+      if (dist < 0.9) return;
       if (now - last.t > 180 || dist > 360) {
-        addHeart(pointer.x, pointer.y, 0, 0, 9);
-        last = { x: pointer.x, y: pointer.y, t: now };
+        addHeart(x, y, 0, 0, 9, true);
+        last = { x: x, y: y, t: now };
         return;
       }
 
-      const dt = Math.max(16, now - last.t);
-      const speed = Math.min(44, dist / (dt / 16.67));
-      const spacing = speed > 24 ? 8.5 : speed > 10 ? 10.5 : 13;
-      const count = Math.max(1, Math.min(4, Math.ceil(dist / spacing)));
+      const spacing = speed > 24 ? 6.5 : speed > 10 ? 8.5 : 11;
+      const count = Math.max(1, Math.min(5, Math.ceil(dist / spacing)));
       for (let i = 1; i <= count; i++) {
         const p = i / count;
         const x = last.x + dx * p;
         const y = last.y + dy * p;
-        addHeart(x, y, dx, dy, speed);
-        if (speed > 24 && i === count) addSpark(x, y, dx, dy);
+        addHeart(x, y, dx, dy, speed, i === count);
+        if (speed > 28 && i === count && now - lastSpark > 38) {
+          addSpark(x, y, dx, dy);
+          lastSpark = now;
+        }
       }
-      last = { x: pointer.x, y: pointer.y, t: now };
+      last = { x: x, y: y, t: now };
     }
 
     addEventListener("pointerdown", function (e) {
@@ -1421,19 +1420,19 @@
       trimParticles();
     }
 
-    function addHeart(x, y, dx, dy, speed) {
+    function addHeart(x, y, dx, dy, speed, lead) {
       particles.push({
         type: "heart",
-        x: x + (Math.random() - 0.5) * 3,
-        y: y + (Math.random() - 0.5) * 3,
-        vx: -dx * 0.004 + (Math.random() - 0.5) * 0.55,
-        vy: -dy * 0.004 - 0.18 - Math.random() * 0.42,
-        size: 7 + Math.random() * 7 + speed * 0.12,
+        x: x + (Math.random() - 0.5) * (lead ? 1.2 : 2.6),
+        y: y + (Math.random() - 0.5) * (lead ? 1.2 : 2.6),
+        vx: (Math.random() - 0.5) * (lead ? 0.18 : 0.38),
+        vy: -0.08 - Math.random() * (lead ? 0.2 : 0.34),
+        size: 6.5 + Math.random() * 6 + speed * (lead ? 0.1 : 0.08),
         life: 1,
-        decay: 0.016 + Math.random() * 0.007,
-        rot: Math.atan2(dy, dx || 1) + (Math.random() - 0.5) * 0.65,
-        spin: (Math.random() - 0.5) * 0.055,
-        color: colors[Math.floor(Math.random() * colors.length)]
+        decay: (lead ? 0.021 : 0.018) + Math.random() * 0.008,
+        rot: Math.atan2(dy, dx || 1) + (Math.random() - 0.5) * (lead ? 0.3 : 0.56),
+        spin: (Math.random() - 0.5) * (lead ? 0.025 : 0.045),
+        color: lead ? colors[Math.floor(Math.random() * 3)] : colors[Math.floor(Math.random() * colors.length)]
       });
       trimParticles();
     }
@@ -1443,8 +1442,8 @@
         type: "spark",
         x: x + (Math.random() - 0.5) * 10,
         y: y + (Math.random() - 0.5) * 10,
-        vx: -dx * 0.01 + (Math.random() - 0.5) * 1.5,
-        vy: -dy * 0.01 + (Math.random() - 0.5) * 1.5,
+        vx: (Math.random() - 0.5) * 1.1,
+        vy: (Math.random() - 0.5) * 1.1,
         size: 2.5 + Math.random() * 5,
         life: 1,
         decay: 0.02 + Math.random() * 0.016,
@@ -1485,6 +1484,23 @@
       ctx.restore();
     }
 
+    function drawLeadHeart() {
+      if (!pointer) return;
+      const age = performance.now() - pointer.t;
+      if (age > 140) return;
+      drawHeart({
+        x: pointer.x,
+        y: pointer.y,
+        vx: 0,
+        vy: 0,
+        size: 8 + Math.min(4, pointer.speed * 0.08),
+        life: 0.78 * (1 - age / 140),
+        rot: pointer.angle + 0.18,
+        spin: 0,
+        color: "#f8fbff"
+      });
+    }
+
     function drawSpark(p) {
       ctx.save();
       ctx.translate(p.x, p.y);
@@ -1520,6 +1536,7 @@
         particles[write++] = p;
       }
       particles.length = write;
+      drawLeadHeart();
       requestAnimationFrame(loop);
     }
     loop();
