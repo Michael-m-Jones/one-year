@@ -111,7 +111,7 @@
     // Lenis smooth scroll, driven by GSAP ticker (canonical integration)
     let lenis = null;
     if (window.Lenis && !reduceMotion) {
-      lenis = new Lenis({ lerp: 0.09, smoothWheel: true });
+      lenis = new Lenis({ lerp: 0.13, smoothWheel: true });
       lenis.on("scroll", function () { if (window.ScrollTrigger) ScrollTrigger.update(); });
     }
     if (window.gsap) {
@@ -149,78 +149,10 @@
       entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } });
     }, { threshold: 0.1, rootMargin: "0px 0px 10% 0px" });
     revealEls.forEach(function (el) { io.observe(el); });
+    setupOpeningFilm(hasGSAP, heavy, lenis);
 
     /* --- Scroll-driven cinematic effects (the "journey" feel) --- */
     if (hasGSAP && heavy) {
-      // Pinned opening: come close to the memory book, turn a page, then dive into the revealed page.
-      if (document.querySelector(".book-stage")) {
-        gsap.set(".book-stage, .book-orbit, .book-spread, .book-cover, .book-cover > span, .book-page-turn, .book-page-turn-front, .book-page-turn-back, .book-page-curl, .book-page-cast, .book-light, .memory-card, .hero-dive-photo", { force3D: true });
-        gsap.set(".book-stage", { scale: 1, z: 0, xPercent: 0, yPercent: 0, autoAlpha: 1, transformOrigin: "62% 48%" });
-        gsap.set(".book-orbit", { rotateX: 61, rotateZ: -3.5, xPercent: 0, y: 50, scale: 0.78, transformOrigin: "62% 52%" });
-        gsap.set(".book-spread", { autoAlpha: 1, scale: 0.995, y: 4, z: 0, rotateX: 0, transformOrigin: "62% 50%" });
-        gsap.set(".book-cover", { rotateY: 0, rotateZ: 0, x: 0, z: 30, autoAlpha: 1, transformOrigin: "0% 50%" });
-        gsap.set(".book-cover > span", { autoAlpha: 1, z: 18 });
-        gsap.set(".book-page-turn", { rotateY: 0, rotateZ: 0, skewY: 0, scaleX: 1, x: 0, z: 0, autoAlpha: 0, transformOrigin: "0% 50%" });
-        gsap.set(".book-page-curl, .book-page-cast", { autoAlpha: 0, x: 0, scaleX: 1 });
-        gsap.set(".book-light", { autoAlpha: 0, scale: 0.88 });
-        gsap.set(".hero-dive-photo", { autoAlpha: 0, scale: 1.18, xPercent: 3, yPercent: 2, filter: "saturate(1.28) brightness(.82) blur(2px)" });
-        gsap.set(".hero-photo", { autoAlpha: 1 });
-        gsap.set(".portal-haze", { scale: 0.96, opacity: 0.62 });
-        gsap.set(".memory-card", { autoAlpha: 0, y: 34, scale: 0.82, rotateZ: function (i) { return [-16, 14, 10, -18][i] || 0; } });
-        gsap.set(".hero-content", { autoAlpha: 0, y: 70, scale: 0.96 });
-
-        const openBook = gsap.timeline({
-          scrollTrigger: {
-            trigger: ".hero",
-            start: "top top",
-            end: "+=315%",
-            scrub: 1,
-            pin: true,
-            anticipatePin: 1,
-            onUpdate: function (self) {
-              document.documentElement.style.setProperty("--book-progress", self.progress.toFixed(4));
-            }
-          }
-        });
-
-        openBook
-          .to(".book-orbit", { rotateX: 51, rotateZ: -4.4, y: 14, scale: 1.04, ease: "sine.out", duration: 0.36 }, 0)
-          .to(".book-cover", { rotateY: -34, rotateZ: -0.35, x: 0, z: 46, ease: "power2.inOut", duration: 0.3 }, 0.24)
-          .to(".book-cover", { rotateY: -88, rotateZ: -1.05, x: -2, z: 58, ease: "power2.inOut", duration: 0.34 }, 0.46)
-          .to(".book-cover > span", { autoAlpha: 0, ease: "power1.out", duration: 0.12 }, 0.58)
-          .to(".book-orbit", { rotateX: 40, rotateZ: -2.2, y: -24, scale: 1.24, ease: "power2.inOut", duration: 0.44 }, 0.42)
-          .to(".book-spread", { scale: 1.08, y: -8, z: 3, ease: "power2.inOut", duration: 0.42 }, 0.52)
-          .to(".book-cover", { rotateY: -132, rotateZ: -2.6, x: -18, z: 34, ease: "power2.inOut", duration: 0.38 }, 0.78)
-          .to(".book-light", { autoAlpha: 0.58, scale: 1.1, ease: "sine.out", duration: 0.24 }, 0.48)
-          .to(".portal-haze", { scale: 1.18, opacity: 0.78, ease: "sine.inOut", duration: 0.34 }, 0.34)
-          .to(".book-page-turn", { autoAlpha: 1, ease: "power2.out", duration: 0.14 }, 0.9)
-          .to(".memory-card", { autoAlpha: 0.82, y: 0, scale: 1, stagger: 0.04, ease: "power2.out", duration: 0.16 }, 0.88)
-          .to(".card-a", { x: -122, y: -74, rotateZ: -27, scale: 1.1, ease: "sine.inOut", duration: 0.38 }, 0.9)
-          .to(".card-b", { x: 126, y: -78, rotateZ: 24, scale: 1.09, ease: "sine.inOut", duration: 0.38 }, 0.9)
-          .to(".card-c", { x: -136, y: 90, rotateZ: 19, scale: 1.07, ease: "sine.inOut", duration: 0.38 }, 0.9)
-          .to(".card-d", { x: 132, y: 88, rotateZ: -24, scale: 1.08, ease: "sine.inOut", duration: 0.38 }, 0.9)
-          .to(".book-page-turn", { autoAlpha: 1, rotateY: -8, rotateZ: 0.8, z: 10, ease: "power2.out", duration: 0.1 }, 0.96)
-          .to(".book-page-curl", { autoAlpha: 0.86, scaleX: 1.14, ease: "sine.out", duration: 0.14 }, 0.96)
-          .to(".book-page-cast", { autoAlpha: 0.4, x: -6, scaleX: 1.18, ease: "sine.out", duration: 0.16 }, 0.98)
-          .to(".book-page-turn", { rotateY: -74, rotateZ: -3.2, skewY: -5, x: -5, z: 72, scaleX: 0.94, ease: "sine.inOut", duration: 0.3 }, 1.08)
-          .to(".book-page-curl", { x: -18, scaleX: 1.55, autoAlpha: 0.9, ease: "sine.inOut", duration: 0.3 }, 1.08)
-          .to(".book-page-cast", { autoAlpha: 0.62, x: -44, scaleX: 1.78, ease: "sine.inOut", duration: 0.28 }, 1.08)
-          .to(".book-page-turn", { rotateY: -174, rotateZ: -2, skewY: -0.5, x: -40, z: 3, scaleX: 1, autoAlpha: 1, ease: "sine.inOut", duration: 0.34 }, 1.38)
-          .to(".book-page-curl", { autoAlpha: 0.08, x: -52, scaleX: 0.72, ease: "sine.in", duration: 0.2 }, 1.44)
-          .to(".book-page-cast", { autoAlpha: 0, x: -92, scaleX: 1.2, ease: "power2.out", duration: 0.2 }, 1.46)
-          .to(".portal-haze", { scale: 1.72, opacity: 1, ease: "sine.inOut", duration: 0.42 }, 1.48)
-          .to(".hero-dive-photo", { autoAlpha: 0.9, scale: 1.02, xPercent: 0, yPercent: 0, filter: "saturate(1.35) brightness(.98) blur(0px)", ease: "sine.inOut", duration: 0.42 }, 1.52)
-          .to(".hero-photo", { autoAlpha: 0.14, scale: 1.18, yPercent: 5, filter: "saturate(1.18) brightness(.72)", ease: "sine.inOut", duration: 0.38 }, 1.52)
-          .to(".book-orbit", { xPercent: -15, yPercent: -7, rotateX: 26, rotateZ: 0.5, y: -52, scale: 1.48, ease: "power2.inOut", duration: 0.36 }, 1.56)
-          .to(".book-spread", { xPercent: -8, y: -24, scale: 1.2, ease: "power2.inOut", duration: 0.36 }, 1.56)
-          .to(".book-page-turn", { autoAlpha: 0, ease: "power2.out", duration: 0.18 }, 1.74)
-          .to(".book-light", { autoAlpha: 1, scale: 1.38, ease: "sine.out", duration: 0.34 }, 1.56)
-          .to(".memory-card", { autoAlpha: 0, scale: 1.22, ease: "power2.in", duration: 0.28 }, 1.58)
-          .to(".book-stage", { scale: 2.36, xPercent: -18, yPercent: -9, z: 780, autoAlpha: 0, ease: "power3.inOut", duration: 0.42 }, 1.78)
-          .to(".hero-content", { autoAlpha: 1, y: 0, scale: 1, ease: "power2.out", duration: 0.24 }, 2)
-          .to(".hero-content", { yPercent: -26, opacity: 0, ease: "none", duration: 0.16 }, 2.22);
-      }
-
       // Parallax inside each moment photo (depth)
       document.querySelectorAll("[data-moment] .frame img").forEach(function (img) {
         const frame = img.closest(".frame");
@@ -289,6 +221,93 @@
     initCounters();
   }
 
+  function setupOpeningFilm(hasGSAP, heavy, lenis) {
+    const bookStage = document.querySelector(".book-stage");
+    if (!bookStage) return;
+
+    const root = document.documentElement;
+    const canPlay = hasGSAP && heavy && !reduceMotion;
+    root.style.setProperty("--book-progress", canPlay ? "0" : "1");
+
+    if (!canPlay) {
+      if (window.gsap) {
+        gsap.set(".book-stage", { autoAlpha: 0.24 });
+        gsap.set(".hero-content", { autoAlpha: 1, y: 0, scale: 1 });
+      } else {
+        bookStage.style.opacity = "0.24";
+      }
+      return;
+    }
+
+    window.scrollTo(0, 0);
+    document.body.classList.add("book-intro-playing");
+    if (lenis && typeof lenis.stop === "function") lenis.stop();
+
+    gsap.set(".book-stage, .book-orbit, .book-spread, .book-cover, .book-cover > span, .book-page-turn, .book-page-turn-front, .book-page-turn-back, .book-page-curl, .book-page-cast, .book-light, .memory-card, .hero-dive-photo", { force3D: true });
+    gsap.set(".book-stage", { scale: 1, z: 0, xPercent: 0, yPercent: 0, autoAlpha: 1, transformOrigin: "55% 52%" });
+    gsap.set(".book-orbit", { rotateX: 61, rotateZ: -4.6, xPercent: 0, y: 42, scale: 0.72, autoAlpha: 1, transformOrigin: "58% 52%" });
+    gsap.set(".book-spread", { autoAlpha: 0, scale: 0.965, y: 10, z: -5, xPercent: 0, rotateX: 0, transformOrigin: "58% 50%" });
+    gsap.set(".book-cover", { rotateY: 0, rotateZ: 0, x: 0, z: 62, autoAlpha: 1, transformOrigin: "1.8% 50%" });
+    gsap.set(".book-cover > span", { autoAlpha: 1, z: 18 });
+    gsap.set(".book-page-turn", { rotateY: 0, rotateZ: 0, skewY: 0, scaleX: 1, x: 0, z: 0, autoAlpha: 0, transformOrigin: "0% 50%" });
+    gsap.set(".book-page-curl, .book-page-cast", { autoAlpha: 0, x: 0, scaleX: 1 });
+    gsap.set(".book-light", { autoAlpha: 0, scale: 0.86 });
+    gsap.set(".hero-dive-photo", { autoAlpha: 0, scale: 1.16, xPercent: 2, yPercent: 2, filter: "saturate(1.22) brightness(.8) blur(2px)" });
+    gsap.set(".hero-photo", { autoAlpha: 1, scale: 1.08 });
+    gsap.set(".portal-haze", { scale: 0.94, opacity: 0.52 });
+    gsap.set(".memory-card", { autoAlpha: 0, y: 28, scale: 0.86, rotateZ: function (i) { return [-16, 14, 10, -18][i] || 0; } });
+    gsap.set(".hero-content", { autoAlpha: 0, y: 38, scale: 0.97 });
+
+    const openBook = gsap.timeline({
+      defaults: { ease: "power3.inOut" },
+      onUpdate: function () {
+        root.style.setProperty("--book-progress", openBook.progress().toFixed(4));
+      },
+      onComplete: function () {
+        root.style.setProperty("--book-progress", "1");
+        document.body.classList.remove("book-intro-playing");
+        if (lenis && typeof lenis.start === "function") lenis.start();
+        refreshScroll();
+      }
+    });
+
+    openBook
+      .to(".book-orbit", { y: 18, scale: 0.88, rotateX: 57, rotateZ: -3.8, duration: 0.72, ease: "expo.out" }, 0)
+      .to(".portal-haze", { opacity: 0.72, scale: 1.05, duration: 1.0, ease: "sine.out" }, 0)
+      .to(".book-cover", { rotateY: -14, z: 76, duration: 0.42, ease: "power2.inOut" }, 0.72)
+      .to(".book-spread", { autoAlpha: 1, duration: 0.28, ease: "power1.out" }, 0.82)
+      .to(".book-orbit", { rotateX: 45, rotateZ: -2.2, y: -8, scale: 1.04, duration: 0.92, ease: "power3.inOut" }, 0.86)
+      .to(".book-cover", { rotateY: -78, rotateZ: -0.8, x: -3, z: 94, duration: 0.8, ease: "power3.inOut" }, 1.08)
+      .to(".book-cover > span", { autoAlpha: 0, duration: 0.18, ease: "power1.out" }, 1.44)
+      .to(".book-spread", { scale: 1.045, y: -4, z: 4, duration: 0.7, ease: "power2.inOut" }, 1.22)
+      .to(".book-cover", { rotateY: -154, rotateZ: -2.2, x: -34, z: 34, duration: 0.86, ease: "power3.inOut" }, 1.82)
+      .to(".book-light", { autoAlpha: 0.58, scale: 1.12, duration: 0.45, ease: "sine.out" }, 1.62)
+      .to(".book-page-turn", { autoAlpha: 1, rotateY: 0, rotateZ: 0.2, z: 16, duration: 0.2, ease: "power2.out" }, 2.42)
+      .to(".book-page-curl", { autoAlpha: 0.78, scaleX: 1.1, duration: 0.24, ease: "sine.out" }, 2.48)
+      .to(".book-page-cast", { autoAlpha: 0.38, x: -6, scaleX: 1.16, duration: 0.28, ease: "sine.out" }, 2.5)
+      .to(".memory-card", { autoAlpha: 0.72, y: 0, scale: 1, stagger: 0.05, duration: 0.32, ease: "power2.out" }, 2.54)
+      .to(".card-a", { x: -112, y: -68, rotateZ: -24, scale: 1.08, duration: 0.72, ease: "sine.inOut" }, 2.62)
+      .to(".card-b", { x: 116, y: -72, rotateZ: 22, scale: 1.08, duration: 0.72, ease: "sine.inOut" }, 2.62)
+      .to(".card-c", { x: -126, y: 78, rotateZ: 17, scale: 1.06, duration: 0.72, ease: "sine.inOut" }, 2.62)
+      .to(".card-d", { x: 126, y: 80, rotateZ: -22, scale: 1.06, duration: 0.72, ease: "sine.inOut" }, 2.62)
+      .to(".book-page-turn", { rotateY: -76, rotateZ: -2.6, skewY: -3.2, x: -5, z: 80, scaleX: 0.96, duration: 0.68, ease: "sine.inOut" }, 2.88)
+      .to(".book-page-curl", { x: -16, scaleX: 1.44, autoAlpha: 0.86, duration: 0.68, ease: "sine.inOut" }, 2.88)
+      .to(".book-page-cast", { autoAlpha: 0.5, x: -42, scaleX: 1.58, duration: 0.6, ease: "sine.inOut" }, 2.88)
+      .to(".book-page-turn", { rotateY: -154, rotateZ: -1.6, skewY: -0.2, x: -36, z: 8, scaleX: 1, duration: 0.66, ease: "sine.inOut" }, 3.52)
+      .to(".book-page-curl", { autoAlpha: 0.08, x: -50, scaleX: 0.78, duration: 0.26, ease: "sine.in" }, 3.82)
+      .to(".book-page-cast", { autoAlpha: 0, x: -92, scaleX: 1.2, duration: 0.26, ease: "power2.out" }, 3.84)
+      .to(".portal-haze", { scale: 1.62, opacity: 1, duration: 0.7, ease: "sine.inOut" }, 3.88)
+      .to(".hero-dive-photo", { autoAlpha: 0.88, scale: 1.01, xPercent: 0, yPercent: 0, filter: "saturate(1.3) brightness(.96) blur(0px)", duration: 0.74, ease: "sine.inOut" }, 3.96)
+      .to(".hero-photo", { autoAlpha: 0.16, scale: 1.16, yPercent: 4, filter: "saturate(1.12) brightness(.74)", duration: 0.68, ease: "sine.inOut" }, 3.96)
+      .to(".book-orbit", { xPercent: -15, yPercent: -7, rotateX: 25, rotateZ: 0.6, y: -46, scale: 1.42, duration: 0.7, ease: "power3.inOut" }, 4.08)
+      .to(".book-spread", { xPercent: -8, y: -22, scale: 1.18, duration: 0.68, ease: "power3.inOut" }, 4.08)
+      .to(".memory-card", { autoAlpha: 0, scale: 1.14, duration: 0.38, ease: "power2.in" }, 4.24)
+      .to(".book-light", { autoAlpha: 1, scale: 1.34, duration: 0.56, ease: "sine.out" }, 4.16)
+      .to(".book-page-turn", { autoAlpha: 0, duration: 0.22, ease: "power2.out" }, 4.42)
+      .to(".book-stage", { scale: 2.18, xPercent: -16, yPercent: -8, z: 700, autoAlpha: 0, duration: 0.78, ease: "power4.inOut" }, 4.56)
+      .to(".hero-content", { autoAlpha: 1, y: 0, scale: 1, duration: 0.58, ease: "power2.out" }, 4.96);
+  }
+
   /* ---------- 3A. IMAGE LOADING: keep the scroll story from outrunning photos ---------- */
   function setupImageLoading() {
     const imgs = Array.prototype.slice.call(document.querySelectorAll("img"));
@@ -310,14 +329,17 @@
     });
 
     // The site is photo-led and the optimized photo set is small, so warming all unique
-    // URLs avoids blank beats on fast scroll and on GitHub Pages' first load.
+    // URLs avoids blank beats, but stagger the work so first entry stays responsive.
     runWhenIdle(function () {
-      urls.forEach(function (src) {
-        const preloader = new Image();
-        preloader.decoding = "async";
-        preloader.onload = refreshScroll;
-        preloader.src = src;
-        if (preloader.decode) preloader.decode().then(refreshScroll).catch(noop);
+      urls.forEach(function (src, i) {
+        const delay = i < 8 ? i * 90 : 1100 + i * 120;
+        setTimeout(function () {
+          const preloader = new Image();
+          preloader.decoding = "async";
+          preloader.onload = refreshScroll;
+          preloader.src = src;
+          if (i < 8 && preloader.decode) preloader.decode().then(refreshScroll).catch(noop);
+        }, delay);
       });
     });
   }
@@ -389,7 +411,7 @@
         end: "max",
         onUpdate: function (self) {
           root.style.setProperty("--ribbon-shift", ((self.progress - 0.5) * 86).toFixed(2) + "%");
-          activateNearestScene();
+          scheduleAmbientUpdate();
         }
       });
       window.addEventListener("resize", debounce(activateNearestScene, 120));
@@ -537,7 +559,7 @@
         baseSide: getBaseSide(el, i)
       };
     });
-    const stars = createStars(isSmall ? 72 : 160);
+    const stars = createStars(isSmall ? 48 : 96);
     const root = document.documentElement;
     const fallbackMood = { a: "111 160 255", b: "255 159 182", c: "255 210 122", deep: "8 14 38" };
 
@@ -588,16 +610,21 @@
       return;
     }
 
+    let lastCanvasFrame = 0;
     requestAnimationFrame(loop);
 
     function loop(now) {
-      updateState();
-      draw(now);
+      const minFrameMs = document.body.classList.contains("book-intro-playing") ? 66 : (isSmall ? 50 : 33);
+      if (!document.hidden && now - lastCanvasFrame >= minFrameMs) {
+        lastCanvasFrame = now;
+        updateState();
+        draw(now);
+      }
       requestAnimationFrame(loop);
     }
 
     function size() {
-      dpr = Math.min(2, devicePixelRatio || 1);
+      dpr = Math.min(isSmall ? 1.2 : 1.45, devicePixelRatio || 1);
       w = innerWidth;
       h = innerHeight;
       [constellationCanvas, journeyCanvas].forEach(function (canvas) {
@@ -1200,21 +1227,40 @@
   function setupPhotoTilt() {
     if (!heavy) return;
     document.querySelectorAll(".frame").forEach(function (frame) {
+      let queued = false;
+      let active = false;
+      let nextX = 0;
+      let nextY = 0;
       frame.addEventListener("pointermove", function (e) {
-        const r = frame.getBoundingClientRect();
-        const px = ((e.clientX - r.left) / r.width) - 0.5;
-        const py = ((e.clientY - r.top) / r.height) - 0.5;
-        frame.style.setProperty("--rx", (-py * 7).toFixed(2) + "deg");
-        frame.style.setProperty("--ry", (px * 7).toFixed(2) + "deg");
-        frame.style.setProperty("--lift", "-6px");
-        frame.classList.add("is-tilting");
+        active = true;
+        nextX = e.clientX;
+        nextY = e.clientY;
+        if (queued) return;
+        queued = true;
+        requestAnimationFrame(function () {
+          queued = false;
+          if (!active) return;
+          applyTilt(nextX, nextY);
+        });
       }, { passive: true });
       frame.addEventListener("pointerleave", function () {
+        active = false;
+        queued = false;
         frame.style.setProperty("--rx", "0deg");
         frame.style.setProperty("--ry", "0deg");
         frame.style.setProperty("--lift", "0px");
         frame.classList.remove("is-tilting");
       });
+
+      function applyTilt(x, y) {
+        const r = frame.getBoundingClientRect();
+        const px = ((x - r.left) / r.width) - 0.5;
+        const py = ((y - r.top) / r.height) - 0.5;
+        frame.style.setProperty("--rx", (-py * 7).toFixed(2) + "deg");
+        frame.style.setProperty("--ry", (px * 7).toFixed(2) + "deg");
+        frame.style.setProperty("--lift", "-6px");
+        frame.classList.add("is-tilting");
+      }
     });
   }
 
@@ -1341,11 +1387,11 @@
     if (!canvas || isSmall || reduceMotion) return;
     const ctx = canvas.getContext("2d", { alpha: true, desynchronized: true });
     const colors = ["#f8fbff", "#dceaff", "#a9c9ff", "#6fa0ff", "#c7dcff"];
-    const MAX_PARTICLES = 145;
-    let w, h, dpr = 1, particles = [], last = null, pointer = null, lastSpark = 0;
+    const MAX_PARTICLES = 120;
+    let w, h, dpr = 1, particles = [], last = null, pointer = null, lastSpark = 0, running = false;
 
     function size() {
-      dpr = Math.min(2, window.devicePixelRatio || 1);
+      dpr = Math.min(1.5, window.devicePixelRatio || 1);
       w = canvas.width = Math.floor(innerWidth * dpr);
       h = canvas.height = Math.floor(innerHeight * dpr);
       canvas.style.width = innerWidth + "px";
@@ -1438,6 +1484,7 @@
         });
       }
       trimParticles();
+      ensureLoop();
     }
 
     function addHeart(x, y, dx, dy, speed, lead) {
@@ -1455,6 +1502,7 @@
         color: lead ? colors[Math.floor(Math.random() * 3)] : colors[Math.floor(Math.random() * colors.length)]
       });
       trimParticles();
+      ensureLoop();
     }
 
     function addSpark(x, y, dx, dy) {
@@ -1472,6 +1520,7 @@
         color: colors[Math.floor(Math.random() * colors.length)]
       });
       trimParticles();
+      ensureLoop();
     }
 
     function trimParticles() {
@@ -1539,6 +1588,12 @@
       ctx.restore();
     }
 
+    function ensureLoop() {
+      if (running) return;
+      running = true;
+      requestAnimationFrame(loop);
+    }
+
     function loop() {
       ctx.clearRect(0, 0, innerWidth, innerHeight);
       let write = 0;
@@ -1557,9 +1612,12 @@
       }
       particles.length = write;
       drawLeadHeart();
-      requestAnimationFrame(loop);
+      if (particles.length || (pointer && performance.now() - pointer.t <= 140)) {
+        requestAnimationFrame(loop);
+      } else {
+        running = false;
+      }
     }
-    loop();
   })();
 
 })();
