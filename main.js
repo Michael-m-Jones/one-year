@@ -154,38 +154,51 @@
     if (hasGSAP && heavy) {
       // Pinned opening: the memory book opens, then the viewer dives into the story.
       if (document.querySelector(".book-stage")) {
-        gsap.set(".book-orbit", { rotateX: 58, rotateZ: -4, y: 44, scale: 0.92 });
-        gsap.set(".book-spread", { opacity: 0.54, scale: 0.78, y: 34 });
-        gsap.set(".book-cover", { rotateY: 0, x: 0 });
-        gsap.set(".memory-card", { autoAlpha: 0, y: 40, scale: 0.78, rotateZ: function (i) { return [-18, 16, 12, -20][i] || 0; } });
-        gsap.set(".hero-content", { autoAlpha: 0, y: 72, scale: 0.95 });
+        gsap.set(".book-stage, .book-orbit, .book-spread, .book-cover, .book-page-turn, .book-light, .memory-card", { force3D: true });
+        gsap.set(".book-stage", { scale: 1, z: 0, autoAlpha: 1, transformOrigin: "50% 52%" });
+        gsap.set(".book-orbit", { rotateX: 62, rotateZ: -3.5, y: 46, scale: 0.86, transformOrigin: "50% 56%" });
+        gsap.set(".book-spread", { autoAlpha: 0.66, scale: 0.82, y: 30, rotateX: 0 });
+        gsap.set(".book-cover", { rotateY: -4, x: 0, autoAlpha: 1, transformOrigin: "0% 50%" });
+        gsap.set(".book-page-turn", { rotateY: 0, x: 0, autoAlpha: 0, transformOrigin: "0% 50%" });
+        gsap.set(".book-light", { autoAlpha: 0, scale: 0.88 });
+        gsap.set(".portal-haze", { scale: 0.96, opacity: 0.62 });
+        gsap.set(".memory-card", { autoAlpha: 0, y: 34, scale: 0.82, rotateZ: function (i) { return [-16, 14, 10, -18][i] || 0; } });
+        gsap.set(".hero-content", { autoAlpha: 0, y: 70, scale: 0.96 });
 
         const openBook = gsap.timeline({
           scrollTrigger: {
             trigger: ".hero",
             start: "top top",
-            end: "+=185%",
-            scrub: 0.65,
+            end: "+=220%",
+            scrub: 0.9,
             pin: true,
-            anticipatePin: 1
+            anticipatePin: 1,
+            onUpdate: function (self) {
+              document.documentElement.style.setProperty("--book-progress", self.progress.toFixed(4));
+            }
           }
         });
 
         openBook
-          .to(".memory-card", { autoAlpha: 0.82, y: 0, scale: 1, stagger: 0.035, ease: "power2.out", duration: 0.2 }, 0)
-          .to(".book-orbit", { rotateX: 52, rotateZ: -8, y: 8, scale: 1.08, ease: "power1.out", duration: 0.22 }, 0)
-          .to(".book-cover", { rotateY: -146, x: -8, ease: "power2.inOut", duration: 0.36 }, 0.08)
-          .to(".book-spread", { opacity: 1, scale: 1.1, y: -10, ease: "power2.out", duration: 0.36 }, 0.1)
-          .to(".card-a", { x: -120, y: -70, rotateZ: -31, scale: 1.18, ease: "power1.inOut", duration: 0.38 }, 0.18)
-          .to(".card-b", { x: 120, y: -74, rotateZ: 26, scale: 1.16, ease: "power1.inOut", duration: 0.38 }, 0.18)
-          .to(".card-c", { x: -140, y: 94, rotateZ: 22, scale: 1.12, ease: "power1.inOut", duration: 0.38 }, 0.18)
-          .to(".card-d", { x: 130, y: 86, rotateZ: -28, scale: 1.13, ease: "power1.inOut", duration: 0.38 }, 0.18)
-          .to(".portal-haze", { scale: 1.28, opacity: 1, ease: "power1.out", duration: 0.32 }, 0.14)
-          .to(".memory-card", { autoAlpha: 0, scale: 1.75, filter: "blur(8px) brightness(1.3)", ease: "power2.in", duration: 0.25 }, 0.5)
-          .to(".book-stage", { scale: 2.65, yPercent: -5, autoAlpha: 0, ease: "power2.in", duration: 0.36 }, 0.48)
-          .to(".hero-photo", { scale: 1.42, yPercent: 8, filter: "saturate(1.18) brightness(.92)", ease: "power1.inOut", duration: 0.38 }, 0.46)
-          .to(".hero-content", { autoAlpha: 1, y: 0, scale: 1, ease: "power2.out", duration: 0.28 }, 0.66)
-          .to(".hero-content", { yPercent: -32, opacity: 0, ease: "none", duration: 0.2 }, 0.92);
+          .to(".memory-card", { autoAlpha: 0.86, y: 0, scale: 1, stagger: 0.04, ease: "power2.out", duration: 0.18 }, 0)
+          .to(".book-orbit", { rotateX: 54, rotateZ: -5.5, y: 10, scale: 1.03, ease: "sine.out", duration: 0.24 }, 0)
+          .to(".book-cover", { rotateY: -98, x: -5, ease: "power2.inOut", duration: 0.34 }, 0.08)
+          .to(".book-cover", { autoAlpha: 0.18, ease: "none", duration: 0.12 }, 0.36)
+          .to(".book-page-turn", { autoAlpha: 0.96, rotateY: -16, ease: "power2.out", duration: 0.13 }, 0.18)
+          .to(".book-page-turn", { rotateY: -142, x: -9, autoAlpha: 0.08, ease: "power2.inOut", duration: 0.38 }, 0.29)
+          .to(".book-spread", { autoAlpha: 1, scale: 1.08, y: -12, ease: "power2.out", duration: 0.38 }, 0.12)
+          .to(".book-light", { autoAlpha: 1, scale: 1.22, ease: "sine.out", duration: 0.36 }, 0.2)
+          .to(".card-a", { x: -118, y: -66, rotateZ: -27, scale: 1.12, ease: "sine.inOut", duration: 0.42 }, 0.23)
+          .to(".card-b", { x: 118, y: -70, rotateZ: 24, scale: 1.11, ease: "sine.inOut", duration: 0.42 }, 0.23)
+          .to(".card-c", { x: -132, y: 86, rotateZ: 19, scale: 1.08, ease: "sine.inOut", duration: 0.42 }, 0.23)
+          .to(".card-d", { x: 128, y: 82, rotateZ: -24, scale: 1.09, ease: "sine.inOut", duration: 0.42 }, 0.23)
+          .to(".portal-haze", { scale: 1.48, opacity: 0.98, ease: "sine.inOut", duration: 0.46 }, 0.26)
+          .to(".book-orbit", { rotateX: 42, rotateZ: -1.5, y: -8, scale: 1.16, ease: "power1.inOut", duration: 0.28 }, 0.46)
+          .to(".memory-card", { autoAlpha: 0, scale: 1.2, ease: "power2.in", duration: 0.24 }, 0.62)
+          .to(".book-stage", { scale: 1.72, z: 420, yPercent: -3, autoAlpha: 0, ease: "power2.inOut", duration: 0.36 }, 0.56)
+          .to(".hero-photo", { scale: 1.23, yPercent: 5, filter: "saturate(1.25) brightness(.98)", ease: "sine.inOut", duration: 0.44 }, 0.52)
+          .to(".hero-content", { autoAlpha: 1, y: 0, scale: 1, ease: "power2.out", duration: 0.24 }, 0.78)
+          .to(".hero-content", { yPercent: -26, opacity: 0, ease: "none", duration: 0.16 }, 0.95);
       }
 
       // Parallax inside each moment photo (depth)
@@ -308,23 +321,40 @@
     ));
     scenes.forEach(function (scene, i) { scene.dataset.storyIndex = i; });
     const palettes = [
-      { deep: "8 14 38", a: "111 160 255", b: "255 159 182", c: "255 210 122" },
-      { deep: "8 26 48", a: "116 180 255", b: "255 190 128", c: "156 192 255" },
-      { deep: "20 14 42", a: "255 159 182", b: "111 160 255", c: "255 210 122" },
-      { deep: "13 28 35", a: "89 201 183", b: "255 210 122", c: "146 220 255" },
-      { deep: "26 17 38", a: "229 160 255", b: "255 180 137", c: "255 222 154" },
-      { deep: "12 22 58", a: "90 134 255", b: "255 151 184", c: "255 210 122" },
-      { deep: "20 24 35", a: "171 211 255", b: "255 180 154", c: "184 225 167" }
+      { deep: "8 14 38", a: "117 172 255", b: "255 166 195", c: "255 223 151" },
+      { deep: "7 25 45", a: "102 207 222", b: "255 194 138", c: "162 198 255" },
+      { deep: "18 16 48", a: "139 186 255", b: "255 166 135", c: "255 232 157" },
+      { deep: "31 14 44", a: "255 138 189", b: "133 174 255", c: "255 217 142" },
+      { deep: "32 15 42", a: "226 150 255", b: "255 179 136", c: "255 230 164" },
+      { deep: "7 30 38", a: "87 219 191", b: "255 210 122", c: "151 220 255" },
+      { deep: "10 18 52", a: "94 138 255", b: "255 153 191", c: "255 216 134" },
+      { deep: "13 33 44", a: "91 214 202", b: "255 174 141", c: "255 232 160" },
+      { deep: "15 22 54", a: "128 176 255", b: "255 129 181", c: "255 213 119" },
+      { deep: "8 37 58", a: "79 205 255", b: "255 190 122", c: "190 239 214" },
+      { deep: "18 20 40", a: "179 220 255", b: "255 177 148", c: "188 230 168" },
+      { deep: "30 18 34", a: "255 158 204", b: "255 211 126", c: "175 218 255" },
+      { deep: "8 33 45", a: "94 225 206", b: "255 185 134", c: "186 230 255" },
+      { deep: "12 25 61", a: "110 150 255", b: "255 141 188", c: "255 219 143" },
+      { deep: "20 18 46", a: "207 163 255", b: "255 169 151", c: "255 226 164" },
+      { deep: "10 28 34", a: "123 218 174", b: "255 206 128", c: "165 216 255" }
     ];
     const worlds = [
-      { x: 22, y: 18, x2: 78, y2: 76, tilt: -8, scale: 1.01 },
-      { x: 64, y: 16, x2: 18, y2: 82, tilt: 6, scale: 1.04 },
-      { x: 18, y: 68, x2: 82, y2: 22, tilt: -14, scale: 1.06 },
-      { x: 44, y: 18, x2: 72, y2: 84, tilt: 11, scale: 1.03 },
-      { x: 74, y: 34, x2: 24, y2: 76, tilt: -4, scale: 1.08 },
-      { x: 28, y: 28, x2: 82, y2: 62, tilt: 13, scale: 1.02 },
-      { x: 54, y: 78, x2: 16, y2: 26, tilt: -12, scale: 1.05 },
-      { x: 80, y: 18, x2: 36, y2: 82, tilt: 4, scale: 1.07 }
+      { name: "book", x: 50, y: 42, x2: 18, y2: 86, tilt: -6, scale: 1.04, photo: .52, blur: 22, bright: .72, sat: 1.48, wash: .58, sheen: .82, pos: "center" },
+      { name: "chapter-blue", x: 16, y: 22, x2: 84, y2: 72, tilt: 8, scale: 1.08, photo: .38, blur: 30, bright: .6, sat: 1.35, wash: .64, sheen: .7, pos: "center" },
+      { name: "tahoe", x: 24, y: 18, x2: 80, y2: 74, tilt: -12, scale: 1.1, photo: .56, blur: 20, bright: .76, sat: 1.55, wash: .56, sheen: .84, pos: "center 34%" },
+      { name: "photobooth", x: 72, y: 30, x2: 24, y2: 82, tilt: 10, scale: 1.06, photo: .54, blur: 21, bright: .74, sat: 1.5, wash: .58, sheen: .86, pos: "center" },
+      { name: "official", x: 50, y: 16, x2: 52, y2: 88, tilt: -5, scale: 1.12, photo: .34, blur: 34, bright: .58, sat: 1.3, wash: .6, sheen: .92, pos: "center" },
+      { name: "morning", x: 22, y: 72, x2: 78, y2: 18, tilt: 14, scale: 1.07, photo: .52, blur: 24, bright: .76, sat: 1.48, wash: .54, sheen: .8, pos: "center" },
+      { name: "sweet", x: 84, y: 28, x2: 30, y2: 80, tilt: -9, scale: 1.12, photo: .55, blur: 22, bright: .78, sat: 1.52, wash: .52, sheen: .82, pos: "center" },
+      { name: "park", x: 26, y: 26, x2: 86, y2: 70, tilt: 7, scale: 1.09, photo: .5, blur: 25, bright: .74, sat: 1.46, wash: .56, sheen: .76, pos: "center" },
+      { name: "disney", x: 70, y: 18, x2: 18, y2: 78, tilt: -14, scale: 1.12, photo: .58, blur: 19, bright: .78, sat: 1.62, wash: .52, sheen: .9, pos: "center" },
+      { name: "ocean", x: 20, y: 36, x2: 82, y2: 70, tilt: 11, scale: 1.14, photo: .58, blur: 18, bright: .8, sat: 1.56, wash: .5, sheen: .88, pos: "center" },
+      { name: "family", x: 76, y: 24, x2: 32, y2: 78, tilt: -3, scale: 1.08, photo: .5, blur: 23, bright: .72, sat: 1.42, wash: .57, sheen: .76, pos: "center" },
+      { name: "valentine", x: 36, y: 18, x2: 80, y2: 78, tilt: 13, scale: 1.12, photo: .56, blur: 21, bright: .76, sat: 1.54, wash: .53, sheen: .9, pos: "center" },
+      { name: "hawaii", x: 18, y: 24, x2: 84, y2: 64, tilt: -10, scale: 1.16, photo: .62, blur: 17, bright: .84, sat: 1.58, wash: .48, sheen: .9, pos: "center" },
+      { name: "birthday", x: 76, y: 18, x2: 28, y2: 82, tilt: 5, scale: 1.1, photo: .54, blur: 22, bright: .77, sat: 1.5, wash: .54, sheen: .82, pos: "center" },
+      { name: "quiet", x: 42, y: 76, x2: 14, y2: 24, tilt: -13, scale: 1.08, photo: .48, blur: 26, bright: .68, sat: 1.38, wash: .62, sheen: .68, pos: "center" },
+      { name: "finale", x: 50, y: 24, x2: 50, y2: 82, tilt: 0, scale: 1.18, photo: .4, blur: 31, bright: .62, sat: 1.42, wash: .58, sheen: .96, pos: "center" }
     ];
 
     let currentScene = null;
@@ -383,8 +413,9 @@
 
     function activateScene(scene, index) {
       if (!scene) return;
-      const palette = palettes[Math.abs(index) % palettes.length];
-      const world = worlds[Math.abs(index) % worlds.length];
+      const worldIndex = getWorldIndex(scene, index);
+      const palette = palettes[worldIndex % palettes.length];
+      const world = worlds[worldIndex % worlds.length];
       const sceneChanged = currentScene !== scene;
       root.style.setProperty("--mood-deep", palette.deep);
       root.style.setProperty("--mood-a", palette.a);
@@ -396,6 +427,13 @@
       root.style.setProperty("--ambient-y2", world.y2 + "%");
       root.style.setProperty("--ambient-tilt", world.tilt + "deg");
       root.style.setProperty("--ambient-scale", world.scale);
+      root.style.setProperty("--ambient-photo-opacity", world.photo);
+      root.style.setProperty("--ambient-photo-blur", world.blur + "px");
+      root.style.setProperty("--ambient-photo-saturate", world.sat);
+      root.style.setProperty("--ambient-photo-brightness", world.bright);
+      root.style.setProperty("--ambient-wash-opacity", world.wash);
+      root.style.setProperty("--world-sheen", world.sheen);
+      document.body.dataset.world = world.name;
 
       if (currentScene && currentScene !== scene) currentScene.classList.remove("is-active");
       currentScene = scene;
@@ -412,7 +450,31 @@
         layerIndex = (layerIndex + 1) % photoLayers.length;
         photoLayers.forEach(function (layer, i) { layer.classList.toggle("is-live", i === layerIndex); });
         photoLayers[layerIndex].style.backgroundImage = toBackgroundImage(photo);
+        photoLayers[layerIndex].style.backgroundPosition = world.pos || "center";
       }
+    }
+
+    function getWorldIndex(scene, index) {
+      const text = (scene.textContent || "").toLowerCase();
+      if (scene.classList.contains("hero")) return 0;
+      if (scene.classList.contains("finale") || scene.classList.contains("letter")) return 15;
+      if (scene.classList.contains("wall-sec") || scene.classList.contains("numbers")) return 13;
+      if (scene.classList.contains("milestone") || text.indexOf("official.") !== -1) return 4;
+      if (text.indexOf("how it started") !== -1) return 1;
+      if (text.indexOf("year of firsts") !== -1) return 5;
+      if (text.indexOf("tahoe") !== -1) return 2;
+      if (text.indexOf("photobooth") !== -1 || text.indexOf("strip") !== -1) return 3;
+      if (text.indexOf("sweet maple") !== -1 || text.indexOf("breakfast") !== -1) return 6;
+      if (text.indexOf("salt") !== -1 || text.indexOf("ice cream") !== -1) return 11;
+      if (text.indexOf("ferry") !== -1 || text.indexOf("alta") !== -1 || text.indexOf("picnic") !== -1 || text.indexOf("park") !== -1) return 7;
+      if (text.indexOf("disney") !== -1 || text.indexOf("universal") !== -1) return 8;
+      if (text.indexOf("huntington") !== -1 || text.indexOf("hawaii") !== -1 || text.indexOf("paradise") !== -1) return 12;
+      if (text.indexOf("valentine") !== -1 || text.indexOf("truffle") !== -1) return 11;
+      if (text.indexOf("parents") !== -1 || text.indexOf("families") !== -1) return 10;
+      if (text.indexOf("birthday") !== -1 || text.indexOf("susie") !== -1) return 13;
+      if (text.indexOf("card") !== -1 || text.indexOf("pokemon") !== -1 || text.indexOf("ghibli") !== -1 || text.indexOf("japantown") !== -1) return 15;
+      if (text.indexOf("gym") !== -1 || text.indexOf("prep") !== -1) return 14;
+      return Math.abs(index) % worlds.length;
     }
 
     function getScenePhoto(scene) {
@@ -455,7 +517,7 @@
         baseSide: getBaseSide(el, i)
       };
     });
-    const stars = createStars(isSmall ? 52 : 110);
+    const stars = createStars(isSmall ? 72 : 160);
     const root = document.documentElement;
     const fallbackMood = { a: "111 160 255", b: "255 159 182", c: "255 210 122", deep: "8 14 38" };
 
@@ -585,10 +647,34 @@
       constellationCtx.clearRect(0, 0, w, h);
       journeyCtx.clearRect(0, 0, w, h);
 
+      drawWorldCurtains(constellationCtx, now, mood);
       drawStarWorld(constellationCtx, now, mood);
       drawMemoryConstellations(constellationCtx, nodes, now, mood);
       drawFinalHeart(constellationCtx, now, mood);
       drawJourneyPath(journeyCtx, nodes, now, mood);
+      drawBookWake(journeyCtx, nodes, now, mood);
+    }
+
+    function drawWorldCurtains(ctx, now, mood) {
+      if (isSmall && scrollProgress > 0.2) return;
+      ctx.save();
+      ctx.globalCompositeOperation = "screen";
+      ctx.lineCap = "round";
+      for (let i = 0; i < 5; i++) {
+        const phase = now * (0.00016 + i * 0.000018) + scrollProgress * 4 + i * 0.9;
+        const y = h * (0.16 + i * 0.17) + Math.sin(phase) * (isSmall ? 12 : 30);
+        const lift = Math.cos(phase * 0.7) * (isSmall ? 14 : 42);
+        const alpha = (isSmall ? 0.035 : 0.058) * (1 + Math.sin(phase + i) * 0.25);
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = i % 3 === 0 ? rgba(mood.a, 0.9) : (i % 3 === 1 ? rgba(mood.b, 0.9) : rgba(mood.c, 0.9));
+        ctx.lineWidth = isSmall ? 22 : 54;
+        ctx.beginPath();
+        ctx.moveTo(-w * 0.12, y);
+        ctx.bezierCurveTo(w * 0.24, y - lift, w * 0.48, y + lift, w * 0.76, y - lift * 0.45);
+        ctx.bezierCurveTo(w * 0.94, y - lift * 0.82, w * 1.06, y + lift * 0.24, w * 1.14, y);
+        ctx.stroke();
+      }
+      ctx.restore();
     }
 
     function drawJourneyPath(ctx, nodes, now, mood) {
@@ -606,8 +692,8 @@
 
       if (visibleNodes.length > 1) {
         ctx.globalAlpha = 0.22;
-        ctx.lineWidth = isSmall ? 1.2 : 1.7;
-        ctx.strokeStyle = rgba(mood.c, 0.46);
+        ctx.lineWidth = isSmall ? 1.4 : 2;
+        ctx.strokeStyle = rgba(mood.c, 0.58);
         drawSpline(ctx, visibleNodes);
       }
 
@@ -617,16 +703,27 @@
         grad.addColorStop(0, rgba(mood.a, 0.94));
         grad.addColorStop(0.56, rgba(mood.b, 0.84));
         grad.addColorStop(1, rgba(mood.c, 0.92));
-        ctx.globalAlpha = 0.74;
-        ctx.lineWidth = isSmall ? 2.1 : 3.2;
+        ctx.globalAlpha = 0.9;
+        ctx.lineWidth = isSmall ? 2.2 : 3.8;
         ctx.strokeStyle = grad;
         drawSpline(ctx, liveNodes);
+
+        ctx.save();
+        ctx.globalAlpha = isSmall ? 0.32 : 0.48;
+        ctx.lineWidth = isSmall ? 1 : 1.5;
+        ctx.strokeStyle = rgba(mood.c, 0.96);
+        ctx.setLineDash([8, 18]);
+        ctx.lineDashOffset = -now * 0.026;
+        drawSpline(ctx, liveNodes);
+        ctx.restore();
+
+        drawPathTravelers(ctx, liveNodes, now, mood);
       }
 
       visibleNodes.forEach(function (node) {
-        const pulse = node.active ? 0.5 + 0.5 * Math.sin(now * 0.004) : 0;
-        const alpha = node.active ? 0.95 : (node.visited ? 0.62 : 0.22);
-        const radius = (node.active ? 5.5 + pulse * 3.2 : node.visited ? 3.6 : 2.2) * (isSmall ? 0.72 : 1);
+        const pulse = node.active ? 0.5 + 0.5 * Math.sin(now * 0.0052) : 0;
+        const alpha = node.active ? 1 : (node.visited ? 0.72 : 0.26);
+        const radius = (node.active ? 6.6 + pulse * 4.1 : node.visited ? 4 : 2.4) * (isSmall ? 0.72 : 1);
 
         ctx.save();
         ctx.globalAlpha = alpha;
@@ -639,10 +736,10 @@
 
         if (node.active) {
           ctx.globalAlpha = 0.38 + pulse * 0.28;
-          ctx.lineWidth = 1.3;
+          ctx.lineWidth = 1.6;
           ctx.strokeStyle = rgba(mood.b, 0.88);
           ctx.beginPath();
-          ctx.arc(node.x, node.y, 18 + pulse * 12, 0, Math.PI * 2);
+          ctx.arc(node.x, node.y, 20 + pulse * 18, 0, Math.PI * 2);
           ctx.stroke();
         }
         ctx.restore();
@@ -651,37 +748,175 @@
       ctx.restore();
     }
 
+    function drawPathTravelers(ctx, points, now, mood) {
+      if (points.length < 2) return;
+      const travelers = isSmall ? 1 : 3;
+      for (let i = 0; i < travelers; i++) {
+        const t = (now * 0.00012 + i / travelers + scrollProgress * 0.3) % 1;
+        const point = pointAlongPath(points, t);
+        if (!point || point.y < -40 || point.y > h + 40) continue;
+        const tail = pointAlongPath(points, Math.max(0, t - 0.035));
+        ctx.save();
+        ctx.globalAlpha = isSmall ? 0.62 : 0.82;
+        ctx.strokeStyle = rgba(mood.c, 0.8);
+        ctx.fillStyle = i % 2 ? rgba(mood.b, 0.98) : rgba(mood.c, 0.98);
+        ctx.shadowColor = ctx.fillStyle;
+        ctx.shadowBlur = 18;
+        if (tail) {
+          ctx.lineWidth = isSmall ? 1.2 : 1.8;
+          ctx.beginPath();
+          ctx.moveTo(tail.x, tail.y);
+          ctx.lineTo(point.x, point.y);
+          ctx.stroke();
+        }
+        drawMiniHeart(ctx, point.x, point.y, isSmall ? 4.2 : 5.6, now * 0.002 + i);
+        ctx.restore();
+      }
+    }
+
+    function drawBookWake(ctx, nodes, now, mood) {
+      const reveal = clamp((mood.book - 0.08) / 0.42, 0, 1) * clamp(1 - scrollProgress / 0.16, 0, 1);
+      if (reveal <= 0) return;
+
+      const sourceX = w * 0.5;
+      const sourceY = h * 0.54;
+      const target = nodes.filter(function (node) { return node.y > -80 && node.y < h + 120; })[0] || nodes[0];
+      const targetX = target ? target.x : w * 0.18;
+      const targetY = target ? target.y : h * 0.85;
+
+      ctx.save();
+      ctx.globalCompositeOperation = "screen";
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      for (let i = 0; i < 3; i++) {
+        const phase = now * 0.002 + i * 1.7;
+        const wobble = Math.sin(phase) * (18 + i * 9);
+        ctx.globalAlpha = reveal * (0.26 - i * 0.045);
+        ctx.lineWidth = (isSmall ? 1.5 : 2.4) + i * 1.7;
+        ctx.strokeStyle = i === 1 ? rgba(mood.b, 0.86) : rgba(mood.c, 0.9);
+        ctx.shadowColor = ctx.strokeStyle;
+        ctx.shadowBlur = 20 + i * 12;
+        ctx.setLineDash(i === 0 ? [12, 18] : []);
+        ctx.lineDashOffset = -now * (0.022 + i * 0.006);
+        ctx.beginPath();
+        ctx.moveTo(sourceX, sourceY);
+        ctx.bezierCurveTo(
+          sourceX - w * 0.12 + wobble,
+          sourceY + h * 0.1,
+          targetX + w * 0.08 - wobble,
+          targetY - h * 0.16,
+          targetX,
+          targetY
+        );
+        ctx.stroke();
+      }
+
+      ctx.globalAlpha = reveal * (0.82 + Math.sin(now * 0.005) * 0.12);
+      ctx.fillStyle = rgba(mood.c, 0.96);
+      ctx.shadowColor = rgba(mood.c, 1);
+      ctx.shadowBlur = 26;
+      drawMiniHeart(ctx, sourceX, sourceY, isSmall ? 6 : 8, -0.25);
+      ctx.restore();
+    }
+
+    function drawMiniHeart(ctx, x, y, size, rotation) {
+      const s = size / 18;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(rotation);
+      ctx.scale(s, s);
+      ctx.beginPath();
+      ctx.moveTo(0, 5);
+      ctx.bezierCurveTo(-18, -8, -9, -24, 0, -12);
+      ctx.bezierCurveTo(9, -24, 18, -8, 0, 5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function pointAlongPath(points, t) {
+      if (!points.length) return null;
+      if (points.length === 1) return { x: points[0].x, y: points[0].y };
+
+      let total = 0;
+      const lengths = [];
+      for (let i = 1; i < points.length; i++) {
+        const len = distance(points[i - 1].x, points[i - 1].y, points[i].x, points[i].y);
+        lengths.push(len);
+        total += len;
+      }
+      if (!total) return { x: points[0].x, y: points[0].y };
+
+      let walked = 0;
+      const target = total * clamp(t, 0, 1);
+      for (let i = 1; i < points.length; i++) {
+        const len = lengths[i - 1];
+        if (walked + len >= target) {
+          const local = (target - walked) / len;
+          return {
+            x: points[i - 1].x + (points[i].x - points[i - 1].x) * local,
+            y: points[i - 1].y + (points[i].y - points[i - 1].y) * local
+          };
+        }
+        walked += len;
+      }
+      const last = points[points.length - 1];
+      return { x: last.x, y: last.y };
+    }
+
     function drawMemoryConstellations(ctx, nodes, now, mood) {
       const overscan = h * 0.32;
       nodes.forEach(function (node) {
         if (node.y < -overscan || node.y > h + overscan) return;
         const activeBoost = node.active ? 1 : 0;
-        const baseAlpha = node.active ? 0.72 : (node.visited ? 0.3 : 0.13);
-        const orbit = 1 + Math.sin(now * 0.0012 + node.index) * 0.045;
+        const baseAlpha = node.active ? 0.92 : (node.visited ? 0.38 : 0.16);
+        const orbit = 1 + Math.sin(now * 0.0015 + node.index) * 0.07;
+        const plotted = [];
 
         ctx.save();
         ctx.lineCap = "round";
         node.satellites.forEach(function (sat, i) {
-          const sway = Math.sin(now * 0.0008 + sat.phase + scrollProgress * 3) * 0.11;
-          const distance = sat.distance * orbit * (1 + activeBoost * 0.14);
+          const sway = Math.sin(now * 0.0011 + sat.phase + scrollProgress * 4.2) * 0.16;
+          const distance = sat.distance * orbit * (1 + activeBoost * 0.2);
           const sx = node.x + Math.cos(sat.angle + sway) * distance;
           const sy = node.y + Math.sin(sat.angle + sway) * distance * 0.72;
           const twinkle = 0.58 + 0.42 * Math.sin(now * sat.speed + sat.phase);
+          plotted.push({ x: sx, y: sy, size: sat.size, twinkle: twinkle });
 
           ctx.globalAlpha = baseAlpha * (0.42 + twinkle * 0.58);
           ctx.strokeStyle = i % 2 ? rgba(mood.a, 0.72) : rgba(mood.b, 0.66);
-          ctx.lineWidth = node.active ? 0.95 : 0.62;
+          ctx.lineWidth = node.active ? 1.15 : 0.68;
           ctx.beginPath();
           ctx.moveTo(node.x, node.y);
           ctx.lineTo(sx, sy);
           ctx.stroke();
+        });
 
-          ctx.globalAlpha = baseAlpha * (0.7 + twinkle * 0.3);
+        if (node.active || node.visited) {
+          plotted.forEach(function (point, i) {
+            if (i % 2 !== 0) return;
+            const next = plotted[(i + 2) % plotted.length];
+            if (!next) return;
+            ctx.globalAlpha = baseAlpha * (node.active ? 0.36 : 0.16);
+            ctx.strokeStyle = i % 4 ? rgba(mood.c, 0.7) : rgba(mood.b, 0.64);
+            ctx.lineWidth = node.active ? 0.9 : 0.55;
+            ctx.setLineDash(node.active ? [4, 10] : []);
+            ctx.lineDashOffset = -now * 0.018;
+            ctx.beginPath();
+            ctx.moveTo(point.x, point.y);
+            ctx.lineTo(next.x, next.y);
+            ctx.stroke();
+          });
+          ctx.setLineDash([]);
+        }
+
+        plotted.forEach(function (point, i) {
+          ctx.globalAlpha = baseAlpha * (0.72 + point.twinkle * 0.34);
           ctx.fillStyle = i % 3 ? rgba(mood.c, 0.92) : rgba(mood.a, 0.88);
           ctx.shadowColor = ctx.fillStyle;
-          ctx.shadowBlur = node.active ? 14 : 6;
+          ctx.shadowBlur = node.active ? 20 : 8;
           ctx.beginPath();
-          ctx.arc(sx, sy, sat.size * (node.active ? 1.2 : 1), 0, Math.PI * 2);
+          ctx.arc(point.x, point.y, point.size * (node.active ? 1.35 : 1.05), 0, Math.PI * 2);
           ctx.fill();
         });
         ctx.restore();
@@ -698,12 +933,12 @@
         const pull = pointer.strength * Math.max(0, 1 - distance(px, py, pointer.x, pointer.y) / 220);
         const x = px + (pointer.x - px) * pull * 0.055;
         const y = py + (pointer.y - py) * pull * 0.055;
-        const twinkle = 0.45 + 0.55 * Math.sin(now * star.speed + star.phase);
+        const twinkle = 0.4 + 0.6 * Math.sin(now * star.speed + star.phase + scrollProgress * 2);
 
-        ctx.globalAlpha = star.alpha * (0.38 + twinkle * 0.62) * (1 + pull * 1.4);
+        ctx.globalAlpha = star.alpha * (0.46 + twinkle * 0.72) * (1 + pull * 1.6);
         ctx.fillStyle = i % 3 === 0 ? rgba(mood.b, 0.9) : (i % 3 === 1 ? rgba(mood.a, 0.9) : rgba(mood.c, 0.86));
         ctx.shadowColor = ctx.fillStyle;
-        ctx.shadowBlur = 8 + pull * 18;
+        ctx.shadowBlur = 10 + pull * 22;
         ctx.beginPath();
         ctx.arc(x, y, star.size * (1 + pull * 1.4), 0, Math.PI * 2);
         ctx.fill();
@@ -713,8 +948,8 @@
           const mx = mate.x * w + (scrollProgress - 0.5) * mate.drift;
           const my = mate.y * h;
           const d = distance(x, y, mx, my);
-          if (d < 170) {
-            ctx.globalAlpha = 0.045 * (1 - d / 170);
+          if (d < 190) {
+            ctx.globalAlpha = 0.07 * (1 - d / 190);
             ctx.strokeStyle = rgba(mood.a, 0.7);
             ctx.lineWidth = 0.65;
             ctx.beginPath();
@@ -806,15 +1041,15 @@
     }
 
     function createSatellites(seed) {
-      const total = 5 + (seed % 4);
+      const total = 7 + (seed % 4);
       const sats = [];
       for (let i = 0; i < total; i++) {
         sats.push({
           angle: rand(seed * 31 + i * 7) * Math.PI * 2,
-          distance: (isSmall ? 20 : 28) + rand(seed * 19 + i * 13) * (isSmall ? 32 : 62),
-          size: 0.9 + rand(seed * 23 + i * 5) * 1.8,
+          distance: (isSmall ? 24 : 34) + rand(seed * 19 + i * 13) * (isSmall ? 36 : 76),
+          size: 1 + rand(seed * 23 + i * 5) * 2.1,
           phase: rand(seed * 29 + i * 17) * Math.PI * 2,
-          speed: 0.0018 + rand(seed * 37 + i * 3) * 0.0024
+          speed: 0.0021 + rand(seed * 37 + i * 3) * 0.003
         });
       }
       return sats;
@@ -826,10 +1061,10 @@
         out.push({
           x: rand(i * 17 + 4),
           y: rand(i * 29 + 7),
-          size: 0.65 + rand(i * 13 + 2) * (isSmall ? 1.2 : 1.9),
-          alpha: 0.18 + rand(i * 23 + 8) * 0.42,
+          size: 0.72 + rand(i * 13 + 2) * (isSmall ? 1.35 : 2.15),
+          alpha: 0.22 + rand(i * 23 + 8) * 0.5,
           phase: rand(i * 31 + 5) * Math.PI * 2,
-          speed: 0.0008 + rand(i * 11 + 9) * 0.0025,
+          speed: 0.001 + rand(i * 11 + 9) * 0.003,
           drift: (rand(i * 43 + 1) - 0.5) * (isSmall ? 34 : 92),
           float: 4 + rand(i * 47 + 6) * (isSmall ? 6 : 16)
         });
@@ -843,7 +1078,8 @@
         a: styles.getPropertyValue("--mood-a").trim() || fallbackMood.a,
         b: styles.getPropertyValue("--mood-b").trim() || fallbackMood.b,
         c: styles.getPropertyValue("--mood-c").trim() || fallbackMood.c,
-        deep: styles.getPropertyValue("--mood-deep").trim() || fallbackMood.deep
+        deep: styles.getPropertyValue("--mood-deep").trim() || fallbackMood.deep,
+        book: parseFloat(styles.getPropertyValue("--book-progress")) || 0
       };
     }
 
