@@ -1320,7 +1320,7 @@
     const canvas = document.getElementById("trail");
     if (!canvas || isSmall || reduceMotion) return;
     const ctx = canvas.getContext("2d");
-    const colors = ["#9cc0ff", "#ff9fb6", "#ffd27a", "#f6f2e9"];
+    const colors = ["#f8fbff", "#dceaff", "#a9c9ff", "#6fa0ff", "#c7dcff"];
     let w, h, dpr = 1, particles = [], last = null;
 
     function size() {
@@ -1337,12 +1337,28 @@
       const now = performance.now();
       const dx = last ? e.clientX - last.x : 0;
       const dy = last ? e.clientY - last.y : 0;
-      const speed = Math.min(32, Math.hypot(dx, dy));
-      if (!last || speed > 5 || now - last.t > 55) {
-        addHeart(e.clientX, e.clientY, dx, dy, speed);
-        if (speed > 14) addSpark(e.clientX, e.clientY, dx, dy);
+      const dist = Math.hypot(dx, dy);
+      const dt = last ? Math.max(16, now - last.t) : 16;
+      const speed = Math.min(46, dist / (dt / 16.67));
+
+      if (!last) {
+        addHeart(e.clientX, e.clientY, 0, 0, 10);
         last = { x: e.clientX, y: e.clientY, t: now };
+        return;
       }
+
+      if (dist < 2 && now - last.t < 28) return;
+
+      const spacing = speed > 24 ? 9 : speed > 10 ? 11 : 14;
+      const count = Math.max(1, Math.min(5, Math.ceil(dist / spacing)));
+      for (let i = 1; i <= count; i++) {
+        const p = i / count;
+        const x = last.x + dx * p;
+        const y = last.y + dy * p;
+        addHeart(x, y, dx, dy, speed);
+        if (speed > 13 && (i === count || i % 2 === 0)) addSpark(x, y, dx, dy);
+      }
+      last = { x: e.clientX, y: e.clientY, t: now };
     }, { passive: true });
 
     addEventListener("pointerdown", function (e) {
@@ -1378,18 +1394,18 @@
     function addHeart(x, y, dx, dy, speed) {
       particles.push({
         type: "heart",
-        x: x + (Math.random() - 0.5) * 8,
-        y: y + (Math.random() - 0.5) * 8,
-        vx: -dx * 0.018 + (Math.random() - 0.5) * 1.1,
-        vy: -dy * 0.018 - 0.35 - Math.random() * 0.8,
-        size: 9 + Math.random() * 11 + speed * 0.24,
+        x: x + (Math.random() - 0.5) * 5,
+        y: y + (Math.random() - 0.5) * 5,
+        vx: -dx * 0.012 + (Math.random() - 0.5) * 0.9,
+        vy: -dy * 0.012 - 0.28 - Math.random() * 0.65,
+        size: 8 + Math.random() * 9 + speed * 0.18,
         life: 1,
-        decay: 0.011 + Math.random() * 0.008,
+        decay: 0.012 + Math.random() * 0.007,
         rot: Math.atan2(dy, dx || 1) + (Math.random() - 0.5) * 0.9,
         spin: (Math.random() - 0.5) * 0.08,
         color: colors[Math.floor(Math.random() * colors.length)]
       });
-      if (particles.length > 130) particles.splice(0, particles.length - 130);
+      if (particles.length > 220) particles.splice(0, particles.length - 220);
     }
 
     function addSpark(x, y, dx, dy) {
@@ -1397,11 +1413,11 @@
         type: "spark",
         x: x + (Math.random() - 0.5) * 10,
         y: y + (Math.random() - 0.5) * 10,
-        vx: -dx * 0.012 + (Math.random() - 0.5) * 1.8,
-        vy: -dy * 0.012 + (Math.random() - 0.5) * 1.8,
-        size: 3 + Math.random() * 6,
+        vx: -dx * 0.01 + (Math.random() - 0.5) * 1.5,
+        vy: -dy * 0.01 + (Math.random() - 0.5) * 1.5,
+        size: 2.5 + Math.random() * 5,
         life: 1,
-        decay: 0.018 + Math.random() * 0.018,
+        decay: 0.02 + Math.random() * 0.016,
         rot: Math.random() * Math.PI,
         spin: (Math.random() - 0.5) * 0.16,
         color: colors[Math.floor(Math.random() * colors.length)]
@@ -1421,9 +1437,13 @@
       ctx.closePath();
       ctx.fillStyle = p.color;
       ctx.shadowColor = p.color;
-      ctx.shadowBlur = 18 * p.life;
-      ctx.globalAlpha = Math.max(0, p.life) * 0.92;
+      ctx.shadowBlur = 22 * p.life;
+      ctx.globalAlpha = Math.max(0, p.life) * 0.95;
       ctx.fill();
+      ctx.globalAlpha = Math.max(0, p.life) * 0.26;
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 1.3;
+      ctx.stroke();
       ctx.restore();
     }
 
