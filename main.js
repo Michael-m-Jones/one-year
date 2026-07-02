@@ -270,6 +270,8 @@
       }
     });
 
+    const revealBeat = 8.05;
+
     openBook
       .to(".book-orbit", { y: 18, scale: 0.88, rotateX: 57, rotateZ: -3.8, duration: 0.72, ease: "expo.out" }, 0)
       .to(".portal-haze", { opacity: 0.72, scale: 1.05, duration: 1.0, ease: "sine.out" }, 0)
@@ -291,16 +293,17 @@
       .to(".book-page-turn", { rotateY: -154, rotateZ: -1.6, skewY: -0.2, x: -36, z: 8, scaleX: 1, duration: 0.66, ease: "sine.inOut" }, 3.52)
       .to(".book-page-curl", { autoAlpha: 0.08, x: -50, scaleX: 0.78, duration: 0.26, ease: "sine.in" }, 3.82)
       .to(".book-page-cast", { autoAlpha: 0, x: -92, scaleX: 1.2, duration: 0.26, ease: "power2.out" }, 3.84)
-      .to(".portal-haze", { scale: 1.62, opacity: 1, duration: 0.7, ease: "sine.inOut" }, 3.88)
-      .to(".hero-dive-photo", { autoAlpha: 0.88, scale: 1.01, xPercent: 0, yPercent: 0, duration: 0.74, ease: "sine.inOut" }, 3.96)
-      .to(".hero-photo", { autoAlpha: 0.16, scale: 1.16, yPercent: 4, duration: 0.68, ease: "sine.inOut" }, 3.96)
-      .to(".book-orbit", { xPercent: -15, yPercent: -7, rotateX: 25, rotateZ: 0.6, y: -46, scale: 1.42, duration: 0.7, ease: "power3.inOut" }, 4.08)
-      .to(".book-spread", { xPercent: -8, y: -22, scale: 1.18, duration: 0.68, ease: "power3.inOut" }, 4.08)
-      .to(".memory-card", { autoAlpha: 0, scale: 1.14, duration: 0.38, ease: "power2.in" }, 4.24)
-      .to(".book-light", { autoAlpha: 1, scale: 1.34, duration: 0.56, ease: "sine.out" }, 4.16)
-      .to(".book-page-turn", { autoAlpha: 0, duration: 0.22, ease: "power2.out" }, 4.42)
-      .to(".book-stage", { scale: 2.18, xPercent: -16, yPercent: -8, z: 700, autoAlpha: 0, duration: 0.78, ease: "power4.inOut" }, 4.56)
-      .to(".hero-content", { autoAlpha: 1, y: 0, scale: 1, duration: 0.58, ease: "power2.out" }, 4.96);
+      .to(".book-page-turn", { autoAlpha: 0, duration: 0.22, ease: "power2.out" }, 4.28)
+      .to(".book-spread", { scale: 1.075, duration: 3.2, ease: "sine.inOut" }, 4.3)
+      .to(".portal-haze", { scale: 1.62, opacity: 1, duration: 0.7, ease: "sine.inOut" }, revealBeat)
+      .to(".hero-dive-photo", { autoAlpha: 0.88, scale: 1.01, xPercent: 0, yPercent: 0, duration: 0.74, ease: "sine.inOut" }, revealBeat + 0.08)
+      .to(".hero-photo", { autoAlpha: 0.16, scale: 1.16, yPercent: 4, duration: 0.68, ease: "sine.inOut" }, revealBeat + 0.08)
+      .to(".book-orbit", { xPercent: -15, yPercent: -7, rotateX: 25, rotateZ: 0.6, y: -46, scale: 1.42, duration: 0.7, ease: "power3.inOut" }, revealBeat + 0.2)
+      .to(".book-spread", { xPercent: -8, y: -22, scale: 1.18, duration: 0.68, ease: "power3.inOut" }, revealBeat + 0.2)
+      .to(".memory-card", { autoAlpha: 0, scale: 1.14, duration: 0.38, ease: "power2.in" }, revealBeat + 0.36)
+      .to(".book-light", { autoAlpha: 1, scale: 1.34, duration: 0.56, ease: "sine.out" }, revealBeat + 0.28)
+      .to(".book-stage", { scale: 2.18, xPercent: -16, yPercent: -8, z: 700, autoAlpha: 0, duration: 0.78, ease: "power4.inOut" }, revealBeat + 0.68)
+      .to(".hero-content", { autoAlpha: 1, y: 0, scale: 1, duration: 0.58, ease: "power2.out" }, revealBeat + 1.08);
 
     preloadOpeningAssets(bookStage).then(function () {
       openBook.play(0);
