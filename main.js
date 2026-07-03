@@ -239,9 +239,24 @@
       return;
     }
 
+    const N = document.querySelectorAll(".book-stage .leaf").length;
     const Z = isSmall
-      ? { base: 11, leaf2: 12, leaf1: 13, cover: 15.6, coverLand: 3, leaf1Land: 6.5, leaf2Land: 10, lift: 26, coverLift: 22, dive: 2.6 }
-      : { base: 18, leaf2: 19.2, leaf1: 20.6, cover: 24, coverLand: 4, leaf1Land: 9, leaf2Land: 14, lift: 50, coverLift: 40, dive: 3.0 };
+      ? { base: 11, gap: 0.9, coverPad: 2.2, coverLand: 3, landBase: 5.2, landStep: 1.8, lift: 26, coverLift: 22, dive: 2.6 }
+      : { base: 18, gap: 1.3, coverPad: 2.8, coverLand: 4, landBase: 7, landStep: 2.2, lift: 50, coverLift: 40, dive: 3.0 };
+    const leafIdle = function (i) { return Z.base + (N - i + 1) * Z.gap; };  // resting height in the right-side stack
+    const leafLand = function (i) { return Z.landBase + i * Z.landStep; };   // each landed page stacks above the last
+    const coverZ = leafIdle(1) + Z.coverPad;
+    // pin the CSS depth vars to THIS breakpoint's constants, so a resize/rotation
+    // mid-film can't flip the media query and sink the leaves under the base page
+    const bookEl = bookStage.querySelector(".book");
+    if (bookEl) {
+      bookEl.style.setProperty("--z-base", Z.base + "px");
+      bookEl.style.setProperty("--stack", (coverZ - 2).toFixed(1) + "px");
+    }
+    // pacing: the whole reel is driven by these four numbers
+    const OPEN_AT = 1.25, OPEN_DUR = 2.3, READ = 2.0, TURN = 1.45;
+    const turnAt = function (i) { return OPEN_AT + OPEN_DUR + READ + (i - 1) * (TURN + READ); };
+    const diveAt = turnAt(N) + TURN + READ + 0.3;
 
     window.scrollTo(0, 0);
     document.body.classList.add("book-intro-playing");
@@ -254,9 +269,8 @@
     gsap.set(".book-scene, .book-root, .cover, .leaf", { force3D: true });
     gsap.set(".book-scene", { rotationX: 56, rotationY: -11, rotationZ: -5, scale: 0.96, transformOrigin: "50% 54%" });
     gsap.set(".book-root", { xPercent: -25, y: 30, transformOrigin: "50% 50%" });
-    gsap.set(".cover", { z: Z.cover, rotationY: 0, transformOrigin: "0% 50%" });
-    gsap.set(".leaf-1", { z: Z.leaf1, rotationY: 0, transformOrigin: "0% 50%" });
-    gsap.set(".leaf-2", { z: Z.leaf2, rotationY: 0, transformOrigin: "0% 50%" });
+    gsap.set(".cover", { z: coverZ, rotationY: 0, transformOrigin: "0% 50%" });
+    for (let i = 1; i <= N; i++) gsap.set(".leaf-" + i, { z: leafIdle(i), rotationY: 0, transformOrigin: "0% 50%" });
     gsap.set(".book-ground", { opacity: 0.4, scaleX: 1.1, transformOrigin: "46% 50%" });
     gsap.set(".memory-card", { autoAlpha: 0, y: 18, scale: 0.9, rotation: function (i) { return [-14, 12, 9, -15][i] || 0; } });
     gsap.set(".portal-haze", { opacity: 0.38, scale: 0.92 });
@@ -285,8 +299,8 @@
       .to(".cover-gloss", { opacity: 0, duration: 0.3, ease: "sine.out" }, 1.3)
 
     // II. the cover swings open — slow and ceremonial — while the book recenters
-      .add("open", 1.25)
-      .to(".cover", { keyframes: { rotationY: [0, -66, -180], z: [Z.cover, Z.cover + Z.coverLift, Z.coverLand] }, duration: 2.3, ease: "power1.inOut" }, "open")
+      .add("open", OPEN_AT)
+      .to(".cover", { keyframes: { rotationY: [0, -66, -180], z: [coverZ, coverZ + Z.coverLift, Z.coverLand] }, duration: OPEN_DUR, ease: "power1.inOut" }, "open")
       // gold plate + title shimmer into speckles at grazing angles — fade them as the board lifts
       .to(".cover-frame, .cover-kicker, .cover-title, .cover-rule, .cover-name", { opacity: 0, duration: 0.5, ease: "sine.in" }, "open+=0.5")
       .to(".book-root", { xPercent: 0, duration: 2.3, ease: "power1.inOut" }, "open")
@@ -301,17 +315,20 @@
       // read beat: the dedication + the first spark
       .to(".leaf-1 .leaf-front .page-photo", { scale: 1.03, duration: 1.7, ease: "sine.inOut" }, "open+=2.35");
 
-    // III & IV. two unhurried page turns — every spread gets its moment
-    addTurn("turn1", ".leaf-1", Z.leaf1, Z.leaf1Land, ".leaf-2 .leaf-front .page-cast", ".cover-inside .page-cast", 5.15);
-    tl.to(".memory-card.card-c, .memory-card.card-d", { autoAlpha: 0.5, y: 0, scale: 0.97, duration: 1.0, stagger: 0.16, ease: "power2.out" }, 6.0)
-      // read beat: our first strip + where it began
-      .to(".leaf-1 .leaf-back .page-photo, .leaf-2 .leaf-front .page-photo", { scale: 1.03, duration: 1.5, ease: "sine.inOut" }, 6.7);
-    addTurn("turn2", ".leaf-2", Z.leaf2, Z.leaf2Land, ".base-page .page-cast", ".leaf-1 .leaf-back .page-cast", 8.2);
+    // III & IV. the pages turn — unhurried, every spread gets its moment
+    for (let i = 1; i <= N; i++) {
+      const underCast = i < N ? ".leaf-" + (i + 1) + " .leaf-front .page-cast" : ".base-page .page-cast";
+      const landCast = i === 1 ? ".cover-inside .page-cast" : ".leaf-" + (i - 1) + " .leaf-back .page-cast";
+      addTurn("turn" + i, ".leaf-" + i, leafIdle(i), leafLand(i), underCast, landCast, turnAt(i));
+      // read beat: breathe the freshly revealed pages
+      const newRight = i < N ? ".leaf-" + (i + 1) + " .leaf-front .page-photo" : ".base-page .page-photo";
+      tl.to(".leaf-" + i + " .leaf-back .page-photo, " + newRight, { scale: 1.03, duration: 1.6, ease: "sine.inOut" }, turnAt(i) + TURN + 0.1);
+    }
+    tl.to(".memory-card.card-c, .memory-card.card-d", { autoAlpha: 0.5, y: 0, scale: 0.97, duration: 1.0, stagger: 0.16, ease: "power2.out" }, turnAt(1) + 0.85);
 
     // V. linger on the last spread, then dive into the photo → hero match-cut
-    tl.to(".leaf-2 .leaf-back .page-photo, .base-page .page-photo", { scale: 1.035, duration: 1.7, ease: "sine.inOut" }, 9.7)
-      .to(".book-glow", { opacity: 0.28, duration: 0.9, ease: "sine.inOut" }, 9.7)
-      .add("dive", 11.5)
+    tl.to(".book-glow", { opacity: 0.28, duration: 0.9, ease: "sine.inOut" }, turnAt(N) + TURN + 0.2)
+      .add("dive", diveAt)
       .to(".book-scene", { rotationX: 6, rotationY: 0, rotationZ: 0, duration: 1.25, ease: "power3.inOut" }, "dive")
       .to(".book-root", { transformOrigin: "74% 46%", scale: Z.dive, z: 430, duration: 1.25, ease: "power3.in" }, "dive")
       .to(".memory-card", { autoAlpha: 0, scale: 1.12, duration: 0.45, ease: "power1.in" }, "dive")
@@ -346,7 +363,7 @@
       skipping = true;
       if (skipBtn) skipBtn.classList.remove("is-live");
       tl.pause();
-      gsap.to(tl, { progress: 1, duration: 0.95, ease: "power1.inOut" });
+      gsap.to(tl, { progress: 1, duration: 1.2, ease: "power1.inOut" });
     }
     function onWheel() { skipFilm(); }
     function onKey(e) {
@@ -413,7 +430,7 @@
     if (!urls.length) return Promise.resolve();
     return Promise.race([
       Promise.all(urls.map(preloadImageUrl)),
-      new Promise(function (resolve) { setTimeout(resolve, 1400); })
+      new Promise(function (resolve) { setTimeout(resolve, 1600); })
     ]);
   }
 
