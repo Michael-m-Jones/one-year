@@ -127,6 +127,7 @@
     setupPhotoTilt();
     setupAmbientStory(hasGSAP);
     setupJourneyCanvas(hasGSAP);
+    setupOpeningFilm(hasGSAP, heavy, lenis); // before the reveal system: the film owns the hero copy
 
     /* --- Entrance reveals: IntersectionObserver adds .in (fires for above-the-fold) --- */
     // Tag moment text with directional reveals. Frames stay unmasked so photos always paint.
@@ -149,7 +150,6 @@
       entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } });
     }, { threshold: 0.1, rootMargin: "0px 0px 10% 0px" });
     revealEls.forEach(function (el) { io.observe(el); });
-    setupOpeningFilm(hasGSAP, heavy, lenis);
 
     /* --- Scroll-driven cinematic effects (the "journey" feel) --- */
     if (hasGSAP && heavy) {
@@ -219,100 +219,186 @@
     initCounters();
   }
 
+  /* ---------- 3½. THE OPENING FILM: a real 3D storybook ----------
+     Geometry: the book occupies the RIGHT half of .book-scene; the spine is
+     the hinge at its left edge. The cover and each leaf rotate a full -180°
+     and land flat on the left, so every turn reveals genuinely new pages.
+     The z constants mirror --stack / --z-base in style.css.               */
   function setupOpeningFilm(hasGSAP, heavy, lenis) {
     const bookStage = document.querySelector(".book-stage");
     if (!bookStage) return;
 
-    const root = document.documentElement;
-    const canPlay = hasGSAP && heavy && !reduceMotion;
-    root.style.setProperty("--book-progress", canPlay ? "0" : "1");
+    const rootEl = document.documentElement;
+    const skipBtn = document.getElementById("intro-skip");
+    const canPlay = hasGSAP && !reduceMotion; // plays on mobile too now
+    rootEl.style.setProperty("--book-progress", canPlay ? "0" : "1");
 
     if (!canPlay) {
-      if (window.gsap) {
-        gsap.set(".book-stage", { autoAlpha: 0.24 });
-        gsap.set(".hero-content", { autoAlpha: 1, y: 0, scale: 1 });
-      } else {
-        bookStage.style.opacity = "0.24";
-      }
+      bookStage.classList.add("book-static");
+      if (skipBtn) skipBtn.remove();
       return;
     }
+
+    const Z = isSmall
+      ? { base: 11, leaf2: 12, leaf1: 13, cover: 15.6, coverLand: 3, leaf1Land: 6.5, leaf2Land: 10, lift: 26, coverLift: 22, dive: 2.6 }
+      : { base: 18, leaf2: 19.2, leaf1: 20.6, cover: 24, coverLand: 4, leaf1Land: 9, leaf2Land: 14, lift: 50, coverLift: 40, dive: 3.0 };
 
     window.scrollTo(0, 0);
     document.body.classList.add("book-intro-playing");
     if (lenis && typeof lenis.stop === "function") lenis.stop();
 
-    gsap.set(".book-stage, .book-orbit, .book-spread, .book-cover, .book-cover > span, .book-page-turn, .book-page-turn-front, .book-page-turn-back, .book-page-curl, .book-page-cast, .book-light, .memory-card, .hero-dive-photo", { force3D: true });
-    gsap.set(".book-stage", { scale: 1, z: 0, xPercent: 0, yPercent: 0, autoAlpha: 1, transformOrigin: "55% 52%" });
-    gsap.set(".book-orbit", { rotateX: 61, rotateZ: -4.6, xPercent: 0, y: 42, scale: 0.72, autoAlpha: 1, transformOrigin: "58% 52%" });
-    gsap.set(".book-spread", { autoAlpha: 0, scale: 0.965, y: 10, z: -5, xPercent: 0, rotateX: 0, transformOrigin: "58% 50%" });
-    gsap.set(".book-cover", { rotateY: 0, rotateZ: 0, x: 0, z: 62, autoAlpha: 1, transformOrigin: "1.8% 50%" });
-    gsap.set(".book-cover > span", { autoAlpha: 1, z: 18 });
-    gsap.set(".book-page-turn", { rotateY: 0, rotateZ: 0, skewY: 0, scaleX: 1, x: 0, z: 0, autoAlpha: 0, transformOrigin: "0% 50%" });
-    gsap.set(".book-page-curl, .book-page-cast", { autoAlpha: 0, x: 0, scaleX: 1 });
-    gsap.set(".book-light", { autoAlpha: 0, scale: 0.86 });
-    gsap.set(".hero-dive-photo", { autoAlpha: 0, scale: 1.12, xPercent: 1, yPercent: 1, filter: "saturate(1.28) brightness(.94)" });
-    gsap.set(".hero-photo", { autoAlpha: 1, scale: 1.08 });
-    gsap.set(".portal-haze", { scale: 0.94, opacity: 0.52 });
-    gsap.set(".memory-card", { autoAlpha: 0, y: 16, scale: 0.92, rotateZ: function (i) { return [-14, 12, 9, -15][i] || 0; } });
-    gsap.set(".hero-content", { autoAlpha: 0, y: 38, scale: 0.97 });
+    // GSAP owns the hero copy during the film (keep the IO reveal system away)
+    const heroBits = gsap.utils.toArray(".hero-content .reveal");
+    heroBits.forEach(function (el) { el.classList.remove("reveal"); });
 
-    const openBook = gsap.timeline({
+    gsap.set(".book-scene, .book-root, .cover, .leaf", { force3D: true });
+    gsap.set(".book-scene", { rotationX: 56, rotationY: -11, rotationZ: -5, scale: 0.96, transformOrigin: "50% 54%" });
+    gsap.set(".book-root", { xPercent: -25, y: 30, transformOrigin: "50% 50%" });
+    gsap.set(".cover", { z: Z.cover, rotationY: 0, transformOrigin: "0% 50%" });
+    gsap.set(".leaf-1", { z: Z.leaf1, rotationY: 0, transformOrigin: "0% 50%" });
+    gsap.set(".leaf-2", { z: Z.leaf2, rotationY: 0, transformOrigin: "0% 50%" });
+    gsap.set(".book-ground", { opacity: 0.4, scaleX: 1.1, transformOrigin: "46% 50%" });
+    gsap.set(".memory-card", { autoAlpha: 0, y: 18, scale: 0.9, rotation: function (i) { return [-14, 12, 9, -15][i] || 0; } });
+    gsap.set(".portal-haze", { opacity: 0.38, scale: 0.92 });
+    gsap.set(".hero-photo", { scale: 1.16, transformOrigin: "50% 42%" });
+    gsap.set(heroBits, { autoAlpha: 0, y: 36 });
+    gsap.set(".cover-gloss", { xPercent: -70 });
+    gsap.set(".cover-inside .leaf-shade", { opacity: 0.5 });
+    gsap.set(".leaf-1 .leaf-front .page-cast", { opacity: 0.55, scaleX: 1.05 });
+
+    // gentle idle drift so the book never freezes between beats
+    const float = gsap.to(".book-float", { y: -7, rotationZ: 0.4, duration: 3.4, yoyo: true, repeat: -1, ease: "sine.inOut", paused: true });
+
+    const tl = gsap.timeline({
       paused: true,
-      defaults: { ease: "power3.inOut" },
-      onUpdate: function () {
-        root.style.setProperty("--book-progress", openBook.progress().toFixed(4));
-      },
-      onComplete: function () {
-        root.style.setProperty("--book-progress", "1");
-        document.body.classList.remove("book-intro-playing");
-        if (lenis && typeof lenis.start === "function") lenis.start();
-        refreshScroll();
-      }
+      defaults: { ease: "power2.inOut" },
+      onUpdate: function () { rootEl.style.setProperty("--book-progress", tl.progress().toFixed(4)); },
+      onComplete: finishFilm
     });
 
-    const revealBeat = 8.05;
+    // I. settle — the closed keepsake catches the light
+    tl.to(".book-scene", { rotationX: 33, rotationY: -10, rotationZ: -4, scale: 1, duration: 1.5, ease: "expo.out" }, 0)
+      .to(".book-root", { y: 0, duration: 1.5, ease: "expo.out" }, 0)
+      .to(".book-ground", { opacity: 0.62, scaleX: 1, duration: 1.2, ease: "sine.out" }, 0.1)
+      .to(".portal-haze", { opacity: 0.6, scale: 1.02, duration: 1.5, ease: "sine.out" }, 0.2)
+      .to(".cover-gloss", { xPercent: 70, opacity: 0.55, duration: 0.95, ease: "sine.inOut" }, 0.4)
+      .to(".cover-gloss", { opacity: 0, duration: 0.3, ease: "sine.out" }, 1.3)
 
-    openBook
-      .to(".book-orbit", { y: 18, scale: 0.88, rotateX: 57, rotateZ: -3.8, duration: 0.72, ease: "expo.out" }, 0)
-      .to(".portal-haze", { opacity: 0.72, scale: 1.05, duration: 1.0, ease: "sine.out" }, 0)
-      .to(".book-cover", { rotateY: -14, z: 76, duration: 0.42, ease: "power2.inOut" }, 0.72)
-      .to(".book-spread", { autoAlpha: 1, duration: 0.28, ease: "power1.out" }, 0.82)
-      .to(".book-orbit", { rotateX: 45, rotateZ: -2.2, y: -8, scale: 1.04, duration: 0.92, ease: "power3.inOut" }, 0.86)
-      .to(".book-cover", { rotateY: -78, rotateZ: -0.8, x: -3, z: 94, duration: 0.8, ease: "power3.inOut" }, 1.08)
-      .to(".book-cover > span", { autoAlpha: 0, duration: 0.18, ease: "power1.out" }, 1.44)
-      .to(".book-spread", { scale: 1.045, y: -4, z: 4, duration: 0.7, ease: "power2.inOut" }, 1.22)
-      .to(".book-page-turn", { autoAlpha: 1, rotateY: 0, rotateZ: 0.2, z: 16, duration: 0.18, ease: "power2.out" }, 0.84)
-      .to(".book-cover", { rotateY: -154, rotateZ: -2.2, x: -34, z: 34, duration: 0.86, ease: "power3.inOut" }, 1.82)
-      .to(".book-light", { autoAlpha: 0.58, scale: 1.12, duration: 0.45, ease: "sine.out" }, 1.62)
-      .to(".book-page-curl", { autoAlpha: 0.78, scaleX: 1.1, duration: 0.24, ease: "sine.out" }, 2.48)
-      .to(".book-page-cast", { autoAlpha: 0.38, x: -6, scaleX: 1.16, duration: 0.28, ease: "sine.out" }, 2.5)
-      .to(".memory-card", { autoAlpha: 0.48, y: 0, scale: 0.98, stagger: 0.08, duration: 0.78, ease: "power2.out" }, 2.7)
-      .to(".book-page-turn", { rotateY: -76, rotateZ: -2.6, skewY: -3.2, x: -5, z: 80, scaleX: 0.96, duration: 0.68, ease: "sine.inOut" }, 2.88)
-      .to(".book-page-curl", { x: -16, scaleX: 1.44, autoAlpha: 0.86, duration: 0.68, ease: "sine.inOut" }, 2.88)
-      .to(".book-page-cast", { autoAlpha: 0.5, x: -42, scaleX: 1.58, duration: 0.6, ease: "sine.inOut" }, 2.88)
-      .to(".book-page-turn", { rotateY: -154, rotateZ: -1.6, skewY: -0.2, x: -36, z: 8, scaleX: 1, duration: 0.66, ease: "sine.inOut" }, 3.52)
-      .to(".book-page-curl", { autoAlpha: 0.08, x: -50, scaleX: 0.78, duration: 0.26, ease: "sine.in" }, 3.82)
-      .to(".book-page-cast", { autoAlpha: 0, x: -92, scaleX: 1.2, duration: 0.26, ease: "power2.out" }, 3.84)
-      .to(".book-page-turn", { autoAlpha: 0, duration: 0.22, ease: "power2.out" }, 4.28)
-      .to(".book-spread", { scale: 1.075, duration: 3.2, ease: "sine.inOut" }, 4.3)
-      .to(".portal-haze", { scale: 1.62, opacity: 1, duration: 0.7, ease: "sine.inOut" }, revealBeat)
-      .to(".hero-dive-photo", { autoAlpha: 0.88, scale: 1.01, xPercent: 0, yPercent: 0, duration: 0.74, ease: "sine.inOut" }, revealBeat + 0.08)
-      .to(".hero-photo", { autoAlpha: 0.16, scale: 1.16, yPercent: 4, duration: 0.68, ease: "sine.inOut" }, revealBeat + 0.08)
-      .to(".book-orbit", { xPercent: -15, yPercent: -7, rotateX: 25, rotateZ: 0.6, y: -46, scale: 1.42, duration: 0.7, ease: "power3.inOut" }, revealBeat + 0.2)
-      .to(".book-spread", { xPercent: -8, y: -22, scale: 1.18, duration: 0.68, ease: "power3.inOut" }, revealBeat + 0.2)
-      .to(".memory-card", { autoAlpha: 0, scale: 1.14, duration: 0.38, ease: "power2.in" }, revealBeat + 0.36)
-      .to(".book-light", { autoAlpha: 1, scale: 1.34, duration: 0.56, ease: "sine.out" }, revealBeat + 0.28)
-      .to(".book-stage", { scale: 2.18, xPercent: -16, yPercent: -8, z: 700, autoAlpha: 0, duration: 0.78, ease: "power4.inOut" }, revealBeat + 0.68)
-      .to(".hero-content", { autoAlpha: 1, y: 0, scale: 1, duration: 0.58, ease: "power2.out" }, revealBeat + 1.08);
+    // II. the cover swings fully open and the book recenters under it
+      .add("open", 1.05)
+      .to(".cover", { keyframes: { rotationY: [0, -68, -180], z: [Z.cover, Z.cover + Z.coverLift, Z.coverLand] }, duration: 1.35, ease: "power2.inOut" }, "open")
+      // gold plate + title shimmer into speckles at grazing angles — fade them as the board lifts
+      .to(".cover-frame, .cover-kicker, .cover-title, .cover-rule, .cover-name", { opacity: 0, duration: 0.32, ease: "sine.in" }, "open+=0.12")
+      .to(".book-root", { xPercent: 0, duration: 1.35, ease: "power2.inOut" }, "open")
+      .to(".book-scene", { rotationX: 30, duration: 1.5, ease: "sine.inOut" }, "open")
+      .to(".cover-inside .leaf-shade", { opacity: 0, duration: 0.85, ease: "sine.out" }, "open+=0.45")
+      .to(".leaf-1 .leaf-front .page-cast", { opacity: 0, scaleX: 0.24, duration: 1.0, ease: "sine.inOut" }, "open+=0.3")
+      .to(".book-glow", { opacity: 0.42, duration: 0.5, ease: "sine.out" }, "open+=0.8")
+      .to(".book-glow", { opacity: 0.15, duration: 0.8, ease: "sine.inOut" }, "open+=1.35")
+      .to(".book-ground", { opacity: 0.74, duration: 0.5, ease: "sine.out" }, "open+=0.95")
+      .to(".memory-card.card-a, .memory-card.card-b", { autoAlpha: 0.5, y: 0, scale: 0.97, duration: 0.9, stagger: 0.14, ease: "power2.out" }, "open+=0.95")
+      .to(".leaf-1 .leaf-front .page-photo", { scale: 1.025, duration: 1.0, ease: "sine.inOut" }, "open+=1.4");
+
+    // III & IV. two real page turns, each revealing new photos
+    addTurn("turn1", ".leaf-1", Z.leaf1, Z.leaf1Land, ".leaf-2 .leaf-front .page-cast", ".cover-inside .page-cast", 3.0);
+    tl.to(".memory-card.card-c, .memory-card.card-d", { autoAlpha: 0.5, y: 0, scale: 0.97, duration: 0.9, stagger: 0.14, ease: "power2.out" }, 3.45);
+    addTurn("turn2", ".leaf-2", Z.leaf2, Z.leaf2Land, ".base-page .page-cast", ".leaf-1 .leaf-back .page-cast", 4.55);
+
+    // V. linger on the last spread, then dive into the photo → hero match-cut
+    tl.to(".base-page .page-photo", { scale: 1.035, duration: 1.1, ease: "sine.inOut" }, 5.75)
+      .to(".book-glow", { opacity: 0.28, duration: 0.7, ease: "sine.inOut" }, 5.75)
+      .add("dive", 6.3)
+      .to(".book-scene", { rotationX: 7, rotationY: 0, rotationZ: 0, duration: 1.15, ease: "power3.inOut" }, "dive")
+      .to(".book-root", { transformOrigin: "74% 46%", scale: Z.dive, z: 430, duration: 1.15, ease: "power3.in" }, "dive")
+      .to(".memory-card", { autoAlpha: 0, scale: 1.12, duration: 0.4, ease: "power1.in" }, "dive")
+      .to(".portal-haze", { opacity: 1, scale: 1.5, duration: 0.9, ease: "sine.in" }, "dive+=0.1")
+      .to(".book-glow", { opacity: 0.55, duration: 0.6, ease: "sine.in" }, "dive")
+      .to(".base-page .page-veil", { opacity: 0.32, duration: 0.7, ease: "sine.in" }, "dive+=0.3")
+      .to(".hero-photo", { scale: 1.06, duration: 1.7, ease: "sine.out" }, "dive+=0.55")
+      .to(".book-stage", { autoAlpha: 0, duration: 0.5, ease: "power2.in" }, "dive+=0.72")
+      .to(".portal-haze", { opacity: 0.82, duration: 0.7, ease: "sine.out" }, "dive+=1.1")
+
+    // VI. the title takes the stage
+      .to(heroBits, { autoAlpha: 1, y: 0, duration: 0.75, stagger: 0.09, ease: "power3.out" }, "dive+=1.0");
+
+    function addTurn(label, leaf, zFrom, zLand, underCast, landCast, at) {
+      tl.add(label, at)
+        .to(leaf, { keyframes: { rotationY: [0, -74, -180], z: [zFrom, zFrom + Z.lift, zLand], skewY: [0, -1.7, 0] }, duration: 1.05, ease: "power2.inOut" }, label)
+        .to(leaf + " .leaf-front .leaf-shade", { opacity: 0.32, duration: 0.5, ease: "sine.in" }, label)
+        .fromTo(leaf + " .leaf-back .leaf-shade", { opacity: 0.5 }, { opacity: 0.06, duration: 0.55, ease: "sine.out" }, label + "+=0.45")
+        .fromTo(underCast, { opacity: 0, scaleX: 0.3 }, { opacity: 0.4, scaleX: 1.05, duration: 0.5, ease: "sine.out" }, label)
+        .to(underCast, { opacity: 0, duration: 0.5, ease: "sine.in" }, label + "+=0.5")
+        .fromTo(landCast, { opacity: 0, scaleX: 1.15 }, { opacity: 0.34, scaleX: 1, duration: 0.4, ease: "sine.out" }, label + "+=0.4")
+        .to(landCast, { opacity: 0, duration: 0.35, ease: "sine.out" }, label + "+=0.85")
+        .to(".book-ground", { opacity: 0.82, duration: 0.16, yoyo: true, repeat: 1, ease: "sine.inOut" }, label + "+=0.86")
+        .to(".book-glow", { opacity: 0.3, duration: 0.3, ease: "sine.out" }, label + "+=0.65")
+        .to(".book-glow", { opacity: 0.13, duration: 0.5, ease: "sine.inOut" }, label + "+=1.0");
+    }
+
+    /* skip: one flick, key, or tap on the pill fast-forwards the film */
+    let skipping = false;
+    function skipFilm() {
+      if (skipping || !document.body.classList.contains("book-intro-playing")) return;
+      skipping = true;
+      if (skipBtn) skipBtn.classList.remove("is-live");
+      tl.pause();
+      gsap.to(tl, { progress: 1, duration: 0.7, ease: "power1.inOut" });
+    }
+    function onWheel() { skipFilm(); }
+    function onKey(e) {
+      if (e.key === "Escape" || e.key === "Enter" || e.key === " " || e.key === "ArrowDown" || e.key === "PageDown") skipFilm();
+    }
+    let touchY = null;
+    function onTouchStart(e) { touchY = e.touches[0] ? e.touches[0].clientY : null; }
+    function onTouchMove(e) {
+      if (!document.body.classList.contains("book-intro-playing")) return;
+      if (e.cancelable) e.preventDefault(); // keep iOS from rubber-banding through the lock
+      if (touchY !== null && e.touches[0] && Math.abs(e.touches[0].clientY - touchY) > 26) skipFilm();
+    }
+    function removeSkipHandlers() {
+      removeEventListener("wheel", onWheel);
+      removeEventListener("keydown", onKey);
+      removeEventListener("touchstart", onTouchStart);
+      document.removeEventListener("touchmove", onTouchMove);
+    }
+    addEventListener("wheel", onWheel, { passive: true });
+    addEventListener("keydown", onKey);
+    addEventListener("touchstart", onTouchStart, { passive: true });
+    document.addEventListener("touchmove", onTouchMove, { passive: false });
+    if (skipBtn) {
+      skipBtn.addEventListener("click", skipFilm);
+      setTimeout(function () {
+        if (document.body.classList.contains("book-intro-playing")) skipBtn.classList.add("is-live");
+      }, 900);
+    }
+
+    function finishFilm() {
+      rootEl.style.setProperty("--book-progress", "1");
+      document.body.classList.remove("book-intro-playing");
+      float.kill();
+      gsap.set(".book-stage", { display: "none" });
+      if (lenis && typeof lenis.start === "function") lenis.start();
+      removeSkipHandlers();
+      if (skipBtn) {
+        skipBtn.classList.remove("is-live");
+        setTimeout(function () { if (skipBtn.parentNode) skipBtn.remove(); }, 500);
+      }
+      refreshScroll();
+    }
+
+    window.__bookFilm = tl; // handy handle for stepping through the sequence
 
     preloadOpeningAssets(bookStage).then(function () {
-      openBook.play(0);
+      // two RAFs so decode work never overlaps the first animation frames
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () { float.play(); tl.play(0); });
+      });
     });
   }
 
   function preloadOpeningAssets(bookStage) {
-    const nodes = Array.prototype.slice.call(document.querySelectorAll(".hero-photo, .hero-dive-photo"))
-      .concat(Array.prototype.slice.call(bookStage.querySelectorAll(".book-photo, .book-page-turn-photo, .memory-card")));
+    const nodes = Array.prototype.slice.call(document.querySelectorAll(".hero-photo"))
+      .concat(Array.prototype.slice.call(bookStage.querySelectorAll(".page-photo, .memory-card")));
     const urls = [];
 
     nodes.forEach(function (el) {
@@ -323,7 +409,7 @@
     if (!urls.length) return Promise.resolve();
     return Promise.race([
       Promise.all(urls.map(preloadImageUrl)),
-      new Promise(function (resolve) { setTimeout(resolve, 650); })
+      new Promise(function (resolve) { setTimeout(resolve, 1400); })
     ]);
   }
 
@@ -560,7 +646,7 @@
     function getScenePhoto(scene) {
       const img = scene.querySelector(".frame img, .wall img");
       if (img) return img.currentSrc || img.src || img.getAttribute("src");
-      const bgEl = scene.querySelector(".hero-photo, .book-photo");
+      const bgEl = scene.querySelector(".hero-photo, .page-photo");
       if (!bgEl) return "";
       const bg = getComputedStyle(bgEl).backgroundImage;
       return bg && bg !== "none" ? bg : "";
@@ -652,7 +738,7 @@
     requestAnimationFrame(loop);
 
     function loop(now) {
-      const minFrameMs = document.body.classList.contains("book-intro-playing") ? 66 : (isSmall ? 50 : 33);
+      const minFrameMs = document.body.classList.contains("book-intro-playing") ? 160 : (isSmall ? 50 : 33);
       if (!document.hidden && now - lastCanvasFrame >= minFrameMs) {
         lastCanvasFrame = now;
         updateState();

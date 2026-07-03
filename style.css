@@ -247,15 +247,9 @@ section[data-section]::selection{background:rgba(255,159,182,.35)}
 
 /* ============ HERO ============ */
 .hero{min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;position:relative}
-.cinematic-hero{min-height:112vh;perspective:1800px;padding:0}
+.cinematic-hero{min-height:112vh;padding:0}
 .hero-photo{position:absolute;inset:0;z-index:-2;background-size:cover;background-position:center;
-  transform:scale(1.08);filter:saturate(1.05);will-change:transform,opacity,filter}
-.hero-dive-photo{
-  position:absolute;inset:-5%;z-index:-2;opacity:0;background-size:cover;background-position:center 34%;
-  transform:scale(1.18) translate3d(3%,2%,0);
-  filter:saturate(1.28) brightness(.82) blur(2px);
-  will-change:transform,opacity,filter
-}
+  transform:scale(1.08);filter:saturate(1.05);will-change:transform}
 .hero::after{content:"";position:absolute;inset:0;z-index:-1;
   background:linear-gradient(180deg, rgba(8,14,38,.55) 0%, rgba(8,14,38,.72) 55%, var(--bg) 100%)}
 .portal-haze{
@@ -265,7 +259,9 @@ section[data-section]::selection{background:rgba(255,159,182,.35)}
     radial-gradient(circle at 50% 52%, transparent 0 21%, rgba(8,14,38,.58) 42%, rgba(8,14,38,.9) 72%);
   mix-blend-mode:screen;
 }
-.book-stage{position:absolute;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;pointer-events:none;perspective:1900px;perspective-origin:50% 42%;contain:layout paint style}
+/* The stage owns the camera. IMPORTANT: no filter/isolation/contain:paint anywhere
+   between here and the leaves — those force-flatten preserve-3d. */
+.book-stage{position:absolute;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;pointer-events:none;perspective:1600px;perspective-origin:50% 42%}
 .memory-card{
   position:absolute;z-index:0;width:clamp(92px,10vw,150px);aspect-ratio:3/4;border:8px solid rgba(255,248,232,.94);
   border-bottom-width:22px;border-radius:8px;background-size:cover;background-position:center;
@@ -277,148 +273,141 @@ section[data-section]::selection{background:rgba(255,159,182,.35)}
 .card-b{right:11vw;top:16vh;transform:rotate(9deg)}
 .card-c{left:15vw;bottom:14vh;transform:rotate(8deg)}
 .card-d{right:17vw;bottom:13vh;transform:rotate(-13deg)}
-.book-orbit{position:relative;width:min(62vw,790px);aspect-ratio:1.55/1;transform-style:preserve-3d;will-change:transform,opacity;transform-origin:58% 52%;isolation:isolate;filter:drop-shadow(0 46px 52px rgba(0,0,0,.32))}
-.book-orbit::before{
-  content:"";position:absolute;inset:7% 0 6% 0;z-index:0;border-radius:23px;pointer-events:none;
+/* --- camera rig: scene (tilt) → float (idle drift) → root (zoom) → book --- */
+.book-scene{position:relative;width:min(72vw,94vh,880px);aspect-ratio:1.46/1;transform-style:preserve-3d}
+.book-float,.book-root{position:absolute;inset:0;transform-style:preserve-3d}
+.book-root{will-change:transform}
+
+/* the book itself occupies the RIGHT half; the spine is its left edge.
+   Pages that end up on the left get there by physically rotating -180°. */
+.book{--stack:20px;--z-base:18px;position:absolute;left:50%;top:0;width:50%;height:100%;transform-style:preserve-3d}
+
+/* soft ground shadow on the "table" plane (leaf node — blur is safe here) */
+.book-ground{position:absolute;inset:2% -12% -12% -112%;transform:translateZ(-3px);border-radius:50%;
+  background:radial-gradient(ellipse at 52% 46%, rgba(3,6,18,.62), rgba(3,6,18,.3) 50%, transparent 72%);
+  filter:blur(16px);opacity:.55}
+
+/* warm reading light, pulses at each page landing */
+.book-glow{position:absolute;inset:-18% -34% -24% -134%;transform:translateZ(95px);opacity:0;pointer-events:none;
+  background:radial-gradient(closest-side, rgba(255,226,163,.38), rgba(156,192,255,.12) 55%, transparent 78%)}
+
+/* back cover board (always beneath everything) */
+.book-board{position:absolute;inset:-2.2% -3% -2.2% 0;border-radius:3px 16px 16px 3px}
+.book-back{transform:translateZ(0);
   background:
-    linear-gradient(90deg, rgba(5,8,24,.82), rgba(20,35,80,.38) 9%, transparent 24%),
-    linear-gradient(180deg, rgba(255,235,181,.2), transparent 8%, transparent 88%, rgba(255,235,181,.12)),
-    linear-gradient(160deg,#111f4c,#07102d 72%);
+    linear-gradient(90deg, rgba(0,0,0,.5), transparent 9%),
+    repeating-linear-gradient(45deg, rgba(255,255,255,.016) 0 2px, transparent 2px 4px),
+    linear-gradient(155deg,#152a60,#0c1637 70%);
+  box-shadow:0 24px 50px -26px rgba(0,0,0,.7), inset 0 0 0 1px rgba(156,192,255,.16)}
+.book-back::before{content:"";position:absolute;top:-.6%;bottom:-.6%;left:-9px;width:20px;border-radius:10px;
+  background:linear-gradient(90deg,#0a1233,#1a3070 55%,#0d1a40);
+  box-shadow:inset 0 0 0 1px rgba(156,192,255,.14);transform:translateZ(1px)}
+
+/* real paper-stack thickness: two slabs standing up from the board */
+.page-edge{position:absolute;backface-visibility:hidden;-webkit-backface-visibility:hidden;pointer-events:none}
+.edge-bottom{left:1.5%;right:1%;top:100%;height:var(--stack);transform-origin:50% 0;
+  transform:translateZ(var(--stack)) rotateX(-90deg);
+  background:
+    linear-gradient(180deg, transparent 0 calc(100% - 4px), #0d1a40 calc(100% - 4px)),
+    repeating-linear-gradient(180deg, #fdf6e4 0 1px, #cbbb95 1px 2px, #f2e7cc 2px 3px)}
+.edge-fore{top:1%;bottom:1.5%;left:100%;width:var(--stack);transform-origin:0 50%;
+  transform:translateZ(var(--stack)) rotateY(90deg);border-radius:0 2px 2px 0;
+  background:
+    linear-gradient(90deg, transparent 0 calc(100% - 4px), #0d1a40 calc(100% - 4px)),
+    repeating-linear-gradient(90deg, #fdf6e4 0 1px, #cbbb95 1px 2px, #f2e7cc 2px 3px)}
+
+/* pages: shared paper surface */
+.base-page,.leaf-face,.cover-endpaper{
+  background:
+    radial-gradient(120% 90% at 30% 20%, rgba(255,255,255,.5), transparent 60%),
+    repeating-linear-gradient(0deg, rgba(120,96,58,.03) 0 2px, transparent 2px 6px),
+    linear-gradient(135deg,#fdf7e6,#efe2c3);
+  box-shadow:inset 0 0 26px rgba(96,72,38,.12)}
+.base-page{position:absolute;inset:0;transform:translateZ(var(--z-base));border-radius:2px 12px 12px 2px;overflow:hidden}
+.leaf{position:absolute;inset:0;transform-style:preserve-3d;transform-origin:0% 50%;will-change:transform}
+.leaf-face{position:absolute;inset:0;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.leaf-front{border-radius:2px 12px 12px 2px;transform:translateZ(.4px)}
+.leaf-back{border-radius:12px 2px 2px 12px;transform:rotateY(180deg) translateZ(.4px)}
+/* gutter shading toward the spine */
+.base-page::before,.leaf-front::before{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;
+  background:linear-gradient(90deg, rgba(74,52,24,.32), rgba(74,52,24,.1) 7%, transparent 17%)}
+.leaf-back::before{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;
+  background:linear-gradient(270deg, rgba(74,52,24,.32), rgba(74,52,24,.1) 7%, transparent 17%)}
+
+/* pasted photo prints with washi tape */
+.page-photo{position:absolute;left:9%;right:9%;top:7.5%;bottom:16.5%;z-index:1;background-size:cover;background-position:center;
+  border:clamp(4px,.55vw,7px) solid #fffdf4;border-radius:4px;
+  box-shadow:0 12px 24px -12px rgba(60,40,14,.55), 0 2px 5px rgba(60,40,14,.22);
+  transform:rotate(-1.3deg)}
+.leaf-back .page-photo{transform:rotate(1.4deg)}
+.page-photo::before,.page-photo::after{content:"";position:absolute;width:24%;height:8%;opacity:.92;
+  background:linear-gradient(180deg, rgba(255,252,240,.88), rgba(238,227,197,.78));
+  box-shadow:0 1px 3px rgba(90,60,20,.2)}
+.page-photo::before{top:-4.5%;left:-7%;transform:rotate(-45deg)}
+.page-photo::after{bottom:-4.5%;right:-7%;transform:rotate(-45deg)}
+.page-caption{position:absolute;left:11%;bottom:5%;z-index:2;font-family:var(--hand);
+  font-size:clamp(.95rem,1.75vw,1.5rem);color:#243258;opacity:.92}
+
+/* dynamic light: per-face shading + cast shadows (opacity/scale only — cheap) */
+.leaf-shade,.page-cast,.page-veil{position:absolute;inset:0;pointer-events:none;opacity:0}
+.leaf-shade{z-index:4;background:linear-gradient(100deg, rgba(43,28,10,.44), rgba(43,28,10,.16) 46%, rgba(43,28,10,.02) 78%)}
+.leaf-back .leaf-shade{background:linear-gradient(260deg, rgba(43,28,10,.46), rgba(43,28,10,.14) 52%, transparent 80%)}
+.page-cast{z-index:5;transform-origin:0 50%;
+  background:linear-gradient(90deg, rgba(20,12,4,.48), rgba(20,12,4,.2) 42%, transparent 76%)}
+.leaf-back .page-cast,.cover-inside .page-cast{transform-origin:100% 50%;
+  background:linear-gradient(270deg, rgba(20,12,4,.48), rgba(20,12,4,.2) 42%, transparent 76%)}
+.page-veil{z-index:6;background:radial-gradient(closest-side at 50% 46%, rgba(255,248,230,.92), rgba(255,248,230,.42) 55%, transparent 82%)}
+
+/* the front cover: a real two-faced board on a spine hinge */
+.cover{position:absolute;inset:-2.2% -3% -2.2% 0;transform-style:preserve-3d;transform-origin:0% 50%;will-change:transform}
+.cover-face{position:absolute;inset:0;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.cover-front{border-radius:3px 16px 16px 3px;transform:translateZ(2px);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.55em;
+  text-align:center;color:#f4ecd9;
+  background:
+    linear-gradient(90deg, rgba(0,0,0,.55), rgba(0,0,0,.16) 4.5%, transparent 13%),
+    repeating-linear-gradient(45deg, rgba(255,255,255,.018) 0 2px, transparent 2px 4px),
+    repeating-linear-gradient(-45deg, rgba(0,0,0,.02) 0 2px, transparent 2px 4px),
+    radial-gradient(130% 100% at 28% 18%, rgba(156,192,255,.15), transparent 55%),
+    linear-gradient(155deg,#1a3068,#0d1839 72%);
   box-shadow:
-    0 54px 100px -48px rgba(0,0,0,.95),
-    inset 0 0 0 1px rgba(156,192,255,.2),
-    inset 0 -7px 0 rgba(255,239,195,.14);
-  transform:translate3d(18px,22px,-44px)
-}
-.book-orbit::after{
-  content:"";position:absolute;left:5%;right:2%;bottom:5.7%;height:4.8%;z-index:0;border-radius:0 0 18px 18px;pointer-events:none;
-  background:
-    repeating-linear-gradient(180deg, rgba(255,249,235,.82) 0 1px, rgba(153,130,88,.34) 1px 3px, rgba(255,249,235,.58) 3px 5px),
-    linear-gradient(180deg,#fff6df,#cbb486);
-  box-shadow:0 13px 26px -20px rgba(0,0,0,.84);
-  transform:translate3d(15px,15px,-20px) rotateX(7deg);
-  opacity:.82
-}
-.book-shadow{position:absolute;left:15%;right:15%;bottom:4%;height:18%;z-index:-1;border-radius:50%;
-  background:radial-gradient(ellipse at center, rgba(0,0,0,.52), transparent 70%);filter:blur(14px);transform:rotateX(64deg)}
-.book-spread{position:absolute;inset:8% 2%;display:grid;grid-template-columns:1fr 1fr;gap:2px;
-  border-radius:18px;overflow:hidden;opacity:0;visibility:hidden;transform-style:preserve-3d;
-  background:linear-gradient(90deg,#d9d0bd,#fff7e7 48%,#d8cdb8 52%,#fff2dc);
-  box-shadow:
-    0 42px 90px -40px rgba(0,0,0,.8),
-    12px 20px 30px -28px rgba(0,0,0,.9),
-    inset 0 0 0 1px rgba(255,255,255,.38);z-index:2;will-change:transform,opacity}
-.book-spread::before{
-  content:"";position:absolute;inset:auto 3% -10px 3%;height:22px;z-index:0;
-  background:repeating-linear-gradient(180deg, rgba(255,248,232,.7) 0 1px, rgba(153,132,96,.3) 2px 3px);
-  border-radius:0 0 16px 16px;filter:blur(.1px);opacity:.72
-}
-.book-spread::after{
-  content:"";position:absolute;top:3%;bottom:3%;right:-16px;width:24px;z-index:-1;pointer-events:none;
-  background:
-    repeating-linear-gradient(90deg, rgba(255,249,235,.78) 0 2px, rgba(151,124,78,.36) 2px 4px),
-    linear-gradient(90deg,#d3bf93,#fff0cb);
-  border-radius:0 16px 16px 0;filter:blur(.15px);opacity:.72;
-  transform:translateZ(-12px) rotateY(78deg);transform-origin:left center
-}
-.book-page{position:relative;overflow:hidden;padding:18px;background:rgba(255,246,224,.96);box-shadow:inset 0 0 34px rgba(91,68,36,.08);transform:translateZ(2px)}
-.page-left{border-radius:16px 3px 3px 16px}
-.page-right{border-radius:3px 16px 16px 3px}
-.book-page::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(8,14,38,.12),transparent 24%,rgba(255,255,255,.18));pointer-events:none}
-.book-page span{position:absolute;left:18px;bottom:16px;z-index:2;font-family:var(--hand);font-size:1.4rem;color:#1a2650;text-shadow:0 1px 8px rgba(255,255,255,.5)}
-.book-photo{height:100%;border-radius:10px;background-size:cover;background-position:center;box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
-.page-left .book-photo{background-position:center 35%}
-.page-right .book-photo{background-position:center}
-.book-crease{position:absolute;top:0;bottom:0;left:50%;width:24px;transform:translateX(-50%);
-  background:linear-gradient(90deg,transparent,rgba(33,24,17,.28),rgba(255,255,255,.3),rgba(33,24,17,.18),transparent);z-index:3;pointer-events:none}
-.book-page-turn{
-  position:absolute;top:8%;left:50%;width:48%;height:84%;z-index:6;overflow:visible;
-  border-radius:8px 18px 18px 8px;transform-origin:left center;transform-style:preserve-3d;
-  opacity:0;visibility:hidden;will-change:transform,opacity;backface-visibility:visible;
-}
-.book-page-turn-front,.book-page-turn-back{
-  position:absolute;inset:0;border-radius:8px 18px 18px 8px;overflow:hidden;
-  backface-visibility:hidden;-webkit-backface-visibility:hidden;transform-style:preserve-3d;
-  background:
-    linear-gradient(90deg, rgba(72,54,32,.22), transparent 15%, rgba(255,255,255,.18) 48%, rgba(121,91,54,.14) 100%),
-    linear-gradient(135deg,#fff8e8,#e8d7ba);
-  box-shadow:0 38px 82px -38px rgba(0,0,0,.86), inset 0 0 0 1px rgba(255,255,255,.45)
-}
-.book-page-turn-front{transform:translateZ(1.2px)}
-.book-page-turn-back{
-  transform:rotateY(180deg) translateZ(1.2px);
-  background:
-    repeating-linear-gradient(180deg, rgba(96,74,46,.08) 0 1px, transparent 1px 12px),
-    linear-gradient(115deg,#eadbbd,#fff8ea 42%,#d9c6a6);
-}
-.book-page-turn-front::after,.book-page-turn-back::after{
-  content:"";position:absolute;inset:0;z-index:3;pointer-events:none;
-  background:
-    linear-gradient(90deg, rgba(33,24,17,.24), transparent 19%, rgba(255,255,255,.22) 54%, rgba(33,24,17,.16)),
-    radial-gradient(ellipse at 22% 50%, rgba(255,210,122,.2), transparent 46%)
-}
-.book-page-turn-photo{position:absolute;inset:18px;z-index:1;border-radius:10px;background-size:cover;background-position:center;filter:saturate(1.04) sepia(.08);opacity:.9;transform:translateZ(1px)}
-.book-page-turn-front span{
-  position:absolute;left:18px;bottom:15px;z-index:4;font-family:var(--hand);font-size:1.28rem;color:#1a2650;text-shadow:0 1px 8px rgba(255,255,255,.55)
-}
-.book-page-curl{
-  position:absolute;top:1.5%;right:-3.5%;width:16%;height:97%;z-index:8;opacity:0;
-  border-radius:0 18px 18px 0;
-  background:linear-gradient(90deg, rgba(255,255,255,.08), rgba(255,248,232,.8) 42%, rgba(105,80,47,.28) 100%);
-  filter:blur(.2px);transform:translateZ(10px) rotateY(8deg);transform-origin:left center;
-  box-shadow:10px 0 28px rgba(0,0,0,.2);will-change:transform,opacity
-}
-.book-page-cast{
-  position:absolute;top:4%;bottom:4%;left:-7%;width:44%;z-index:-1;opacity:0;
-  background:radial-gradient(ellipse at center, rgba(0,0,0,.56), transparent 72%);
-  filter:blur(15px);transform:translateZ(-35px);will-change:transform,opacity
-}
-.book-light{
-  position:absolute;inset:0;z-index:8;opacity:0;pointer-events:none;border-radius:24px;
-  background:
-    radial-gradient(ellipse at 50% 47%, rgba(255,232,166,.34), transparent 34%),
-    radial-gradient(ellipse at 50% 54%, rgba(156,192,255,.2), transparent 58%);
-  mix-blend-mode:screen;filter:blur(8px);transform:scale(.9);will-change:transform,opacity
-}
-.book-cover{position:absolute;top:7%;left:1.6%;width:96.8%;height:85.6%;z-index:7;display:flex;flex-direction:column;justify-content:space-between;
-  padding:clamp(28px,4vw,48px);border-radius:20px;transform-origin:1.8% 50%;transform-style:preserve-3d;will-change:transform,opacity;
-  color:#fff8ea;text-align:left;background:transparent;box-shadow:none;backface-visibility:visible;
-  filter:drop-shadow(0 42px 34px rgba(0,0,0,.46))
-}
-.book-cover::before,.book-cover::after{
-  content:"";position:absolute;inset:0;border-radius:18px;pointer-events:none;backface-visibility:hidden;-webkit-backface-visibility:hidden;
-  transform-style:preserve-3d
-}
-.book-cover::before{
-  background:
-    repeating-linear-gradient(90deg, rgba(255,255,255,.028) 0 1px, transparent 1px 4px),
-    linear-gradient(90deg,rgba(0,0,0,.56),rgba(0,0,0,.18) 4%,transparent 13%),
-    linear-gradient(135deg,rgba(255,255,255,.16),transparent 28%),
-    linear-gradient(160deg,#122459,#0b1538 70%);
-  box-shadow:
-    0 42px 90px -42px rgba(0,0,0,.9),
-    inset 0 0 0 1px rgba(156,192,255,.28),
-    inset 7px 0 0 rgba(6,10,30,.42),
-    inset 11px 0 0 rgba(255,210,122,.12),
-    inset 14px 14px 0 -13px rgba(255,210,122,.42),
-    inset -14px -14px 0 -13px rgba(255,210,122,.28);
-  transform:translateZ(13px)
-}
-.book-cover::after{
-  background:
-    linear-gradient(90deg,rgba(0,0,0,.46),rgba(0,0,0,.12) 7%,transparent 18%),
-    radial-gradient(ellipse at 50% 45%, rgba(156,192,255,.12), transparent 48%),
-    linear-gradient(145deg,#172958,#0e193a 68%);
-  box-shadow:
-    0 36px 78px -44px rgba(0,0,0,.95),
-    inset 0 0 0 1px rgba(255,210,122,.24),
-    inset 18px 0 28px rgba(0,0,0,.24);
-  transform:rotateY(180deg) translateZ(13px)
-}
-.book-cover > span{position:relative;z-index:2;display:block;transform:translateZ(18px);backface-visibility:hidden;-webkit-backface-visibility:hidden}
-.cover-kicker{font-family:var(--sans);font-size:.75rem;letter-spacing:.34em;color:var(--gold);text-transform:uppercase}
-.cover-title{font-family:var(--serif);font-size:clamp(2.7rem,5.6vw,6.4rem);line-height:.96;font-weight:700;max-width:62%}
-.cover-name{font-family:var(--hand);font-size:1.55rem;color:var(--blue-soft)}
+    0 18px 44px -22px rgba(0,0,0,.85),
+    inset 0 0 0 1px rgba(156,192,255,.22),
+    inset -2px -2px 6px rgba(0,0,0,.35),
+    inset 2px 2px 6px rgba(255,255,255,.05)}
+.cover-inside{border-radius:16px 3px 3px 16px;transform:rotateY(180deg) translateZ(2px);
+  background:linear-gradient(200deg,#16295c,#0d1737);
+  box-shadow:inset 0 0 0 1px rgba(156,192,255,.18)}
+.cover-endpaper{position:absolute;inset:3.4%;border-radius:8px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:10px;padding:6%}
+.endpaper-note{font-family:var(--hand);font-size:clamp(1.05rem,2vw,1.7rem);line-height:1.35;color:#2a3a66;transform:rotate(-1.5deg)}
+.endpaper-date{font-family:var(--sans);font-size:clamp(.5rem,.7vw,.62rem);letter-spacing:.32em;text-transform:uppercase;color:rgba(42,58,102,.55)}
+/* gold-foil plate */
+.cover-frame{position:absolute;inset:4.4%;border:1px solid rgba(255,210,122,.5);border-radius:6px;pointer-events:none}
+.cover-frame::before{content:"";position:absolute;inset:5px;border:1px solid rgba(255,210,122,.26);border-radius:4px}
+.cover-kicker{font-family:var(--sans);font-size:clamp(.5rem,.8vw,.7rem);letter-spacing:.4em;color:var(--gold);text-transform:uppercase;opacity:.92}
+.cover-title{font-family:var(--serif);font-weight:700;font-size:clamp(2rem,4.5vw,4.5rem);line-height:1.04;
+  text-shadow:0 1px 0 rgba(255,255,255,.08), 0 -1px 1px rgba(0,0,0,.4)}
+.cover-rule{width:34%;height:1px;background:linear-gradient(90deg,transparent,rgba(255,210,122,.65),transparent)}
+.cover-name{font-family:var(--hand);font-size:clamp(1rem,1.9vw,1.6rem);color:var(--blue-soft)}
+.cover-gloss{position:absolute;inset:-4%;z-index:5;opacity:0;pointer-events:none;
+  background:linear-gradient(112deg, transparent 34%, rgba(255,255,255,.22) 46%, rgba(255,255,255,.05) 52%, transparent 62%)}
+
+/* skip control for the opening film */
+.intro-skip{position:fixed;right:26px;bottom:24px;z-index:130;padding:9px 18px;border-radius:999px;
+  border:1px solid rgba(156,192,255,.35);background:rgba(10,18,48,.55);backdrop-filter:blur(6px);
+  color:var(--cream-dim);font-family:var(--sans);font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;
+  cursor:pointer;opacity:0;pointer-events:none;transition:opacity .45s ease, color .2s ease, border-color .2s ease}
+.intro-skip.is-live{opacity:.8;pointer-events:auto}
+.intro-skip:hover{opacity:1;color:#fff;border-color:rgba(156,192,255,.7)}
+
+/* static fallback (reduced motion / no GSAP): book rests open, no film */
+.book-static{opacity:.3}
+.book-static .book-scene{transform:rotateX(30deg) rotateY(-9deg) rotateZ(-3deg)}
+.book-static .cover{transform:translateZ(4px) rotateY(-180deg)}
+.book-static .leaf-1{transform:translateZ(9px) rotateY(-180deg)}
+.book-static .leaf-2{transform:translateZ(14px)}
+.book-static .book-glow{opacity:.25}
 .hero-content{max-width:900px;text-shadow:0 2px 30px rgba(0,0,0,.45);position:relative;z-index:2}
 .hero-title{font-family:var(--serif);font-size:clamp(3.5rem,14vw,10rem);line-height:.95;font-weight:700}
 .hero-title span{display:block}
@@ -604,13 +593,21 @@ section[data-section]::selection{background:rgba(255,159,182,.35)}
   body.entered::after{animation:none}
   section[data-section]{padding:10vh 7vw}
   .cinematic-hero{min-height:100vh}
-  .book-stage{opacity:.32;transform:translateY(-3vh)}
+  .book-stage{perspective:1150px;perspective-origin:50% 44%}
   .memory-card{display:none}
-  .book-orbit{width:92vw}
-  .book-cover{padding:22px 20px;border-radius:14px}
-  .cover-kicker{font-size:.62rem}
-  .cover-title{font-size:clamp(1.8rem,10vw,3.4rem)}
-  .cover-name,.book-page span{font-size:1.05rem}
+  .book-scene{width:min(94vw,72vh)}
+  .book{--stack:13px;--z-base:11px}
+  .cover-face,.cover-front{border-radius:2px 10px 10px 2px}
+  .cover-inside{border-radius:10px 2px 2px 10px}
+  .cover-front{transform:translateZ(1.4px)}
+  .cover-inside{transform:rotateY(180deg) translateZ(1.4px)}
+  .cover-title{font-size:clamp(1.5rem,8.5vw,2.6rem)}
+  .cover-kicker{font-size:.5rem;letter-spacing:.3em}
+  .cover-name{font-size:1rem}
+  .page-caption{font-size:.92rem}
+  .endpaper-note{font-size:1.05rem}
+  .book-back::before{left:-6px;width:13px}
+  .intro-skip{right:14px;bottom:14px;padding:8px 14px;font-size:.7rem}
   .hero-content{padding:0 7vw}
   .r-left,.r-right{transform:translateY(28px)}
   .moment{grid-template-columns:1fr;gap:26px;min-height:auto}
