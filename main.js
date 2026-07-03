@@ -277,62 +277,66 @@
     });
 
     // I. settle — the closed keepsake catches the light
-    tl.to(".book-scene", { rotationX: 33, rotationY: -10, rotationZ: -4, scale: 1, duration: 1.5, ease: "expo.out" }, 0)
-      .to(".book-root", { y: 0, duration: 1.5, ease: "expo.out" }, 0)
+    tl.to(".book-scene", { rotationX: 33, rotationY: -10, rotationZ: -4, scale: 1, duration: 1.6, ease: "expo.out" }, 0)
+      .to(".book-root", { y: 0, duration: 1.6, ease: "expo.out" }, 0)
       .to(".book-ground", { opacity: 0.62, scaleX: 1, duration: 1.2, ease: "sine.out" }, 0.1)
       .to(".portal-haze", { opacity: 0.6, scale: 1.02, duration: 1.5, ease: "sine.out" }, 0.2)
       .to(".cover-gloss", { xPercent: 70, opacity: 0.55, duration: 0.95, ease: "sine.inOut" }, 0.4)
       .to(".cover-gloss", { opacity: 0, duration: 0.3, ease: "sine.out" }, 1.3)
 
-    // II. the cover swings fully open and the book recenters under it
-      .add("open", 1.05)
-      .to(".cover", { keyframes: { rotationY: [0, -68, -180], z: [Z.cover, Z.cover + Z.coverLift, Z.coverLand] }, duration: 1.35, ease: "power2.inOut" }, "open")
+    // II. the cover swings open — slow and ceremonial — while the book recenters
+      .add("open", 1.25)
+      .to(".cover", { keyframes: { rotationY: [0, -66, -180], z: [Z.cover, Z.cover + Z.coverLift, Z.coverLand] }, duration: 2.3, ease: "power1.inOut" }, "open")
       // gold plate + title shimmer into speckles at grazing angles — fade them as the board lifts
-      .to(".cover-frame, .cover-kicker, .cover-title, .cover-rule, .cover-name", { opacity: 0, duration: 0.32, ease: "sine.in" }, "open+=0.12")
-      .to(".book-root", { xPercent: 0, duration: 1.35, ease: "power2.inOut" }, "open")
-      .to(".book-scene", { rotationX: 30, duration: 1.5, ease: "sine.inOut" }, "open")
-      .to(".cover-inside .leaf-shade", { opacity: 0, duration: 0.85, ease: "sine.out" }, "open+=0.45")
-      .to(".leaf-1 .leaf-front .page-cast", { opacity: 0, scaleX: 0.24, duration: 1.0, ease: "sine.inOut" }, "open+=0.3")
-      .to(".book-glow", { opacity: 0.42, duration: 0.5, ease: "sine.out" }, "open+=0.8")
-      .to(".book-glow", { opacity: 0.15, duration: 0.8, ease: "sine.inOut" }, "open+=1.35")
-      .to(".book-ground", { opacity: 0.74, duration: 0.5, ease: "sine.out" }, "open+=0.95")
-      .to(".memory-card.card-a, .memory-card.card-b", { autoAlpha: 0.5, y: 0, scale: 0.97, duration: 0.9, stagger: 0.14, ease: "power2.out" }, "open+=0.95")
-      .to(".leaf-1 .leaf-front .page-photo", { scale: 1.025, duration: 1.0, ease: "sine.inOut" }, "open+=1.4");
+      .to(".cover-frame, .cover-kicker, .cover-title, .cover-rule, .cover-name", { opacity: 0, duration: 0.5, ease: "sine.in" }, "open+=0.5")
+      .to(".book-root", { xPercent: 0, duration: 2.3, ease: "power1.inOut" }, "open")
+      // present the spread nearly face-on while pages are read (kills the foreshortening squish)
+      .to(".book-scene", { rotationX: 16, rotationY: -5, rotationZ: -2, duration: 2.6, ease: "sine.inOut" }, "open")
+      .to(".cover-inside .leaf-shade", { opacity: 0, duration: 1.2, ease: "sine.out" }, "open+=0.8")
+      .to(".leaf-1 .leaf-front .page-cast", { opacity: 0, scaleX: 0.24, duration: 1.5, ease: "sine.inOut" }, "open+=0.55")
+      .to(".book-glow", { opacity: 0.42, duration: 0.6, ease: "sine.out" }, "open+=1.5")
+      .to(".book-glow", { opacity: 0.15, duration: 0.9, ease: "sine.inOut" }, "open+=2.3")
+      .to(".book-ground", { opacity: 0.74, duration: 0.6, ease: "sine.out" }, "open+=1.4")
+      .to(".memory-card.card-a, .memory-card.card-b", { autoAlpha: 0.5, y: 0, scale: 0.97, duration: 1.0, stagger: 0.16, ease: "power2.out" }, "open+=1.5")
+      // read beat: the dedication + the first spark
+      .to(".leaf-1 .leaf-front .page-photo", { scale: 1.03, duration: 1.7, ease: "sine.inOut" }, "open+=2.35");
 
-    // III & IV. two real page turns, each revealing new photos
-    addTurn("turn1", ".leaf-1", Z.leaf1, Z.leaf1Land, ".leaf-2 .leaf-front .page-cast", ".cover-inside .page-cast", 3.0);
-    tl.to(".memory-card.card-c, .memory-card.card-d", { autoAlpha: 0.5, y: 0, scale: 0.97, duration: 0.9, stagger: 0.14, ease: "power2.out" }, 3.45);
-    addTurn("turn2", ".leaf-2", Z.leaf2, Z.leaf2Land, ".base-page .page-cast", ".leaf-1 .leaf-back .page-cast", 4.55);
+    // III & IV. two unhurried page turns — every spread gets its moment
+    addTurn("turn1", ".leaf-1", Z.leaf1, Z.leaf1Land, ".leaf-2 .leaf-front .page-cast", ".cover-inside .page-cast", 5.15);
+    tl.to(".memory-card.card-c, .memory-card.card-d", { autoAlpha: 0.5, y: 0, scale: 0.97, duration: 1.0, stagger: 0.16, ease: "power2.out" }, 6.0)
+      // read beat: our first strip + where it began
+      .to(".leaf-1 .leaf-back .page-photo, .leaf-2 .leaf-front .page-photo", { scale: 1.03, duration: 1.5, ease: "sine.inOut" }, 6.7);
+    addTurn("turn2", ".leaf-2", Z.leaf2, Z.leaf2Land, ".base-page .page-cast", ".leaf-1 .leaf-back .page-cast", 8.2);
 
     // V. linger on the last spread, then dive into the photo → hero match-cut
-    tl.to(".base-page .page-photo", { scale: 1.035, duration: 1.1, ease: "sine.inOut" }, 5.75)
-      .to(".book-glow", { opacity: 0.28, duration: 0.7, ease: "sine.inOut" }, 5.75)
-      .add("dive", 6.3)
-      .to(".book-scene", { rotationX: 7, rotationY: 0, rotationZ: 0, duration: 1.15, ease: "power3.inOut" }, "dive")
-      .to(".book-root", { transformOrigin: "74% 46%", scale: Z.dive, z: 430, duration: 1.15, ease: "power3.in" }, "dive")
-      .to(".memory-card", { autoAlpha: 0, scale: 1.12, duration: 0.4, ease: "power1.in" }, "dive")
-      .to(".portal-haze", { opacity: 1, scale: 1.5, duration: 0.9, ease: "sine.in" }, "dive+=0.1")
-      .to(".book-glow", { opacity: 0.55, duration: 0.6, ease: "sine.in" }, "dive")
-      .to(".base-page .page-veil", { opacity: 0.32, duration: 0.7, ease: "sine.in" }, "dive+=0.3")
-      .to(".hero-photo", { scale: 1.06, duration: 1.7, ease: "sine.out" }, "dive+=0.55")
-      .to(".book-stage", { autoAlpha: 0, duration: 0.5, ease: "power2.in" }, "dive+=0.72")
-      .to(".portal-haze", { opacity: 0.82, duration: 0.7, ease: "sine.out" }, "dive+=1.1")
+    tl.to(".leaf-2 .leaf-back .page-photo, .base-page .page-photo", { scale: 1.035, duration: 1.7, ease: "sine.inOut" }, 9.7)
+      .to(".book-glow", { opacity: 0.28, duration: 0.9, ease: "sine.inOut" }, 9.7)
+      .add("dive", 11.5)
+      .to(".book-scene", { rotationX: 6, rotationY: 0, rotationZ: 0, duration: 1.25, ease: "power3.inOut" }, "dive")
+      .to(".book-root", { transformOrigin: "74% 46%", scale: Z.dive, z: 430, duration: 1.25, ease: "power3.in" }, "dive")
+      .to(".memory-card", { autoAlpha: 0, scale: 1.12, duration: 0.45, ease: "power1.in" }, "dive")
+      .to(".portal-haze", { opacity: 1, scale: 1.5, duration: 1.0, ease: "sine.in" }, "dive+=0.1")
+      .to(".book-glow", { opacity: 0.55, duration: 0.65, ease: "sine.in" }, "dive")
+      .to(".base-page .page-veil", { opacity: 0.32, duration: 0.75, ease: "sine.in" }, "dive+=0.35")
+      .to(".hero-photo", { scale: 1.06, duration: 1.8, ease: "sine.out" }, "dive+=0.6")
+      .to(".book-stage", { autoAlpha: 0, duration: 0.55, ease: "power2.in" }, "dive+=0.82")
+      .to(".portal-haze", { opacity: 0.82, duration: 0.7, ease: "sine.out" }, "dive+=1.25")
 
     // VI. the title takes the stage
-      .to(heroBits, { autoAlpha: 1, y: 0, duration: 0.75, stagger: 0.09, ease: "power3.out" }, "dive+=1.0");
+      .to(heroBits, { autoAlpha: 1, y: 0, duration: 0.8, stagger: 0.09, ease: "power3.out" }, "dive+=1.15");
 
     function addTurn(label, leaf, zFrom, zLand, underCast, landCast, at) {
       tl.add(label, at)
-        .to(leaf, { keyframes: { rotationY: [0, -74, -180], z: [zFrom, zFrom + Z.lift, zLand], skewY: [0, -1.7, 0] }, duration: 1.05, ease: "power2.inOut" }, label)
-        .to(leaf + " .leaf-front .leaf-shade", { opacity: 0.32, duration: 0.5, ease: "sine.in" }, label)
-        .fromTo(leaf + " .leaf-back .leaf-shade", { opacity: 0.5 }, { opacity: 0.06, duration: 0.55, ease: "sine.out" }, label + "+=0.45")
-        .fromTo(underCast, { opacity: 0, scaleX: 0.3 }, { opacity: 0.4, scaleX: 1.05, duration: 0.5, ease: "sine.out" }, label)
-        .to(underCast, { opacity: 0, duration: 0.5, ease: "sine.in" }, label + "+=0.5")
-        .fromTo(landCast, { opacity: 0, scaleX: 1.15 }, { opacity: 0.34, scaleX: 1, duration: 0.4, ease: "sine.out" }, label + "+=0.4")
-        .to(landCast, { opacity: 0, duration: 0.35, ease: "sine.out" }, label + "+=0.85")
-        .to(".book-ground", { opacity: 0.82, duration: 0.16, yoyo: true, repeat: 1, ease: "sine.inOut" }, label + "+=0.86")
-        .to(".book-glow", { opacity: 0.3, duration: 0.3, ease: "sine.out" }, label + "+=0.65")
-        .to(".book-glow", { opacity: 0.13, duration: 0.5, ease: "sine.inOut" }, label + "+=1.0");
+        .to(leaf, { keyframes: { rotationY: [0, -74, -180], z: [zFrom, zFrom + Z.lift, zLand], skewY: [0, -1.7, 0] }, duration: 1.45, ease: "power2.inOut" }, label)
+        .to(leaf + " .leaf-front .leaf-shade", { opacity: 0.32, duration: 0.7, ease: "sine.in" }, label)
+        .fromTo(leaf + " .leaf-back .leaf-shade", { opacity: 0.5 }, { opacity: 0.06, duration: 0.75, ease: "sine.out" }, label + "+=0.62")
+        .fromTo(underCast, { opacity: 0, scaleX: 0.3 }, { opacity: 0.4, scaleX: 1.05, duration: 0.7, ease: "sine.out" }, label)
+        .to(underCast, { opacity: 0, duration: 0.7, ease: "sine.in" }, label + "+=0.7")
+        .fromTo(landCast, { opacity: 0, scaleX: 1.15 }, { opacity: 0.34, scaleX: 1, duration: 0.55, ease: "sine.out" }, label + "+=0.55")
+        .to(landCast, { opacity: 0, duration: 0.45, ease: "sine.out" }, label + "+=1.18")
+        .to(".book-ground", { opacity: 0.82, duration: 0.2, yoyo: true, repeat: 1, ease: "sine.inOut" }, label + "+=1.2")
+        .to(".book-glow", { opacity: 0.3, duration: 0.4, ease: "sine.out" }, label + "+=0.9")
+        .to(".book-glow", { opacity: 0.13, duration: 0.6, ease: "sine.inOut" }, label + "+=1.4");
     }
 
     /* skip: one flick, key, or tap on the pill fast-forwards the film */
@@ -342,7 +346,7 @@
       skipping = true;
       if (skipBtn) skipBtn.classList.remove("is-live");
       tl.pause();
-      gsap.to(tl, { progress: 1, duration: 0.7, ease: "power1.inOut" });
+      gsap.to(tl, { progress: 1, duration: 0.95, ease: "power1.inOut" });
     }
     function onWheel() { skipFilm(); }
     function onKey(e) {

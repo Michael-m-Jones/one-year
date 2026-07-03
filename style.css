@@ -340,6 +340,10 @@ section[data-section]::selection{background:rgba(255,159,182,.35)}
   box-shadow:0 12px 24px -12px rgba(60,40,14,.55), 0 2px 5px rgba(60,40,14,.22);
   transform:rotate(-1.3deg)}
 .leaf-back .page-photo{transform:rotate(1.4deg)}
+/* frames follow each photo's native orientation so nothing gets crammed */
+.page-photo.land{left:7%;right:7%;top:19%;bottom:32%}
+.page-photo.land + .page-caption{bottom:25.5%}
+.page-photo.tall{left:23%;right:23%;top:6%;bottom:15.5%}
 .page-photo::before,.page-photo::after{content:"";position:absolute;width:24%;height:8%;opacity:.92;
   background:linear-gradient(180deg, rgba(255,252,240,.88), rgba(238,227,197,.78));
   box-shadow:0 1px 3px rgba(90,60,20,.2)}
