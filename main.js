@@ -1593,53 +1593,104 @@
     }
 
     function drawFinalHeart(ctx, now, mood) {
-      const reveal = clamp((scrollProgress - 0.82) / 0.16, 0, 1);
+      const reveal = clamp((scrollProgress - 0.8) / 0.16, 0, 1);
       if (reveal <= 0) return;
 
+      const gather = easeInOutCubic(reveal);
+      const labelReveal = clamp((reveal - 0.46) / 0.38, 0, 1);
       const cx = w * (isSmall ? 0.5 : 0.72);
-      const cy = h * (isSmall ? 0.44 : 0.5);
-      const scale = Math.min(w, h) * (isSmall ? 0.0058 : 0.0085);
-      const count = 24;
+      const cy = h * (isSmall ? 0.48 : 0.49);
+      const unit = Math.min(w, h) * (isSmall ? 0.009 : 0.011);
+      const count = isSmall ? 32 : 46;
       const points = [];
 
       for (let i = 0; i < count; i++) {
         const t = (Math.PI * 2 * i) / count;
-        const x = 16 * Math.pow(Math.sin(t), 3);
-        const y = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+        const hx = 16 * Math.pow(Math.sin(t), 3);
+        const hy = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+        const targetX = cx + hx * unit;
+        const targetY = cy + hy * unit;
+        const startX = w * (0.12 + rand(i * 47 + 9) * 0.76);
+        const startY = h * (0.1 + rand(i * 53 + 4) * 0.8);
+        const breathing = Math.sin(now * 0.0017 + i * 0.73) * (1 - gather) * 14;
         points.push({
-          x: cx + x * scale * 10,
-          y: cy + y * scale * 10,
+          x: lerp(startX, targetX, gather) + breathing,
+          y: lerp(startY, targetY, gather) - breathing * 0.36,
+          tx: targetX,
+          ty: targetY,
           phase: i * 0.41
         });
       }
 
       ctx.save();
-      ctx.globalAlpha = reveal * 0.5;
+      ctx.globalCompositeOperation = "screen";
+      ctx.globalAlpha = 0.32 * reveal;
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
-      ctx.strokeStyle = rgba(mood.b, 0.78);
-      ctx.fillStyle = rgba(mood.c, 0.94);
-      ctx.shadowColor = rgba(mood.b, 0.82);
-      ctx.shadowBlur = 16;
-      ctx.lineWidth = isSmall ? 1 : 1.35;
+      ctx.strokeStyle = rgba(mood.a, 0.78);
+      ctx.shadowColor = rgba(mood.a, 0.82);
+      ctx.shadowBlur = 20;
+      ctx.lineWidth = isSmall ? 1 : 1.25;
       ctx.beginPath();
       points.forEach(function (point, i) {
-        const beat = Math.sin(now * 0.002 + point.phase) * reveal * 1.8;
-        const x = point.x + beat;
-        const y = point.y - beat * 0.55;
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+        if (i === 0) ctx.moveTo(point.x, point.y);
+        else ctx.lineTo(point.x, point.y);
       });
       ctx.closePath();
       ctx.stroke();
 
-      points.forEach(function (point) {
-        const twinkle = 0.72 + 0.28 * Math.sin(now * 0.003 + point.phase);
+      if (reveal > 0.25) {
+        ctx.globalAlpha = 0.16 + reveal * 0.18;
+        ctx.strokeStyle = rgba(mood.b, 0.74);
+        ctx.lineWidth = isSmall ? 0.8 : 1;
+        for (let i = 0; i < points.length; i += 3) {
+          const point = points[i];
+          const next = points[(i + 11) % points.length];
+          ctx.beginPath();
+          ctx.moveTo(point.x, point.y);
+          ctx.lineTo(next.x, next.y);
+          ctx.stroke();
+        }
+      }
+
+      points.forEach(function (point, i) {
+        const twinkle = 0.62 + 0.38 * Math.sin(now * 0.003 + point.phase);
+        const size = (isSmall ? 1.8 : 2.35) + (i % 7 === 0 ? 1.4 : 0);
         ctx.globalAlpha = reveal * twinkle;
+        ctx.fillStyle = i % 3 ? rgba(mood.c, 0.96) : rgba(mood.b, 0.9);
+        ctx.shadowColor = ctx.fillStyle;
+        ctx.shadowBlur = 12 + labelReveal * 8;
         ctx.beginPath();
-        ctx.arc(point.x, point.y, isSmall ? 1.5 : 2.1, 0, Math.PI * 2);
+        ctx.arc(point.x, point.y, size * (0.75 + labelReveal * 0.3), 0, Math.PI * 2);
         ctx.fill();
       });
+
+      if (labelReveal > 0) {
+        const labelEase = easeOutCubic(labelReveal);
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.shadowColor = rgba(mood.c, 0.86);
+        ctx.shadowBlur = 24;
+        ctx.globalAlpha = labelEase;
+        ctx.fillStyle = "rgba(246,242,233,0.96)";
+        ctx.font = (isSmall ? "44px" : "64px") + " Caveat, cursive";
+        ctx.fillText("M + S", cx, cy - unit * 0.25);
+        ctx.globalAlpha = labelEase * 0.92;
+        ctx.fillStyle = rgba(mood.c, 0.92);
+        ctx.font = (isSmall ? "15px" : "18px") + " Inter, system-ui, sans-serif";
+        ctx.letterSpacing = "4px";
+        ctx.fillText("08.02.2025", cx, cy + unit * 3.9);
+        ctx.letterSpacing = "0px";
+
+        ctx.globalAlpha = labelEase * (0.32 + 0.12 * Math.sin(now * 0.004));
+        ctx.strokeStyle = rgba(mood.c, 0.86);
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 12]);
+        ctx.lineDashOffset = -now * 0.018;
+        ctx.beginPath();
+        ctx.arc(cx, cy, unit * 17.4, 0, Math.PI * 2);
+        ctx.stroke();
+      }
       ctx.restore();
     }
 
@@ -1732,6 +1783,18 @@
       return Math.max(min, Math.min(max, value));
     }
 
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    function easeInOutCubic(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    function easeOutCubic(t) {
+      return 1 - Math.pow(1 - t, 3);
+    }
+
     function snapHalf(value) {
       return Math.round(value * 2) / 2;
     }
@@ -1749,12 +1812,24 @@
 
     let lastFocus = null;
     const photos = document.querySelectorAll(".frame img");
+    const photoFrames = [];
     photos.forEach(function (img) {
       const label = getPhotoCaption(img);
+      const frame = img.closest(".frame");
       img.setAttribute("role", "button");
       img.setAttribute("tabindex", "0");
       img.setAttribute("aria-label", label ? "open photo: " + label : "open photo");
-      img.addEventListener("click", function () { openPhoto(img); });
+      if (frame) {
+        frame.setAttribute("role", "button");
+        frame.setAttribute("tabindex", "-1");
+        frame.setAttribute("aria-label", label ? "open photo: " + label : "open photo");
+        frame.addEventListener("click", function () { openPhoto(img); });
+        photoFrames.push({ frame: frame, img: img });
+      }
+      img.addEventListener("click", function (e) {
+        e.stopPropagation();
+        openPhoto(img);
+      });
       img.addEventListener("keydown", function (e) {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
@@ -1763,6 +1838,20 @@
       });
     });
 
+    document.addEventListener("click", function (e) {
+      if (viewer.classList.contains("is-open") || !photoFrames.length) return;
+      for (let i = 0; i < photoFrames.length; i++) {
+        const item = photoFrames[i];
+        const rect = item.frame.getBoundingClientRect();
+        if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
+          e.preventDefault();
+          e.stopPropagation();
+          openPhoto(item.img);
+          return;
+        }
+      }
+    }, true);
+
     closeBtn.addEventListener("click", closePhoto);
     backdrop.addEventListener("click", closePhoto);
     document.addEventListener("keydown", function (e) {
@@ -1770,9 +1859,16 @@
     });
 
     function openPhoto(img) {
+      if (viewer.classList.contains("is-open")) return;
       lastFocus = document.activeElement;
       const src = img.currentSrc || img.src || img.getAttribute("src");
       const text = getPhotoCaption(img);
+      const origin = img.getBoundingClientRect();
+      const originX = origin.left + origin.width / 2;
+      const originY = origin.top + origin.height / 2;
+      viewer.style.setProperty("--portal-bg", "url(\"" + src.replace(/"/g, "\\\"") + "\")");
+      viewer.style.setProperty("--portal-x", ((originX / innerWidth) * 100).toFixed(2) + "%");
+      viewer.style.setProperty("--portal-y", ((originY / innerHeight) * 100).toFixed(2) + "%");
       viewerImg.src = src;
       viewerImg.alt = img.alt || text || "photo memory";
       caption.textContent = text;
@@ -1782,18 +1878,52 @@
       closeBtn.focus({ preventScroll: true });
 
       if (hasGSAP) {
-        gsap.fromTo(shell, { y: 28, scale: 0.94, rotationZ: -1, autoAlpha: 0 },
-          { y: 0, scale: 1, rotationZ: 0, autoAlpha: 1, duration: 0.52, ease: "power3.out" });
-        gsap.fromTo(viewerImg, { rotationY: -16, rotationX: 4, rotationZ: -2.5 },
-          { rotationY: 0, rotationX: 0, rotationZ: -1.2, duration: 0.75, ease: "power3.out" });
+        requestAnimationFrame(function () {
+          const target = viewerImg.getBoundingClientRect();
+          const targetX = target.left + target.width / 2;
+          const targetY = target.top + target.height / 2;
+          const scale = target.width ? Math.max(0.08, Math.min(1.6, origin.width / target.width)) : 0.4;
+          gsap.killTweensOf([viewer, shell, viewerImg, caption]);
+          gsap.fromTo(viewer,
+            { clipPath: "circle(" + Math.max(40, origin.width * 0.35) + "px at " + originX + "px " + originY + "px)" },
+            { clipPath: "circle(150% at " + originX + "px " + originY + "px)", duration: 0.82,
+              ease: "power3.inOut", clearProps: "clipPath" });
+          gsap.fromTo(shell,
+            { autoAlpha: 0, z: -80, rotationX: 9 },
+            { autoAlpha: 1, z: 0, rotationX: 0, duration: 0.76, delay: 0.08, ease: "power3.out" });
+          gsap.fromTo(viewerImg,
+            { x: originX - targetX, y: originY - targetY, scale: scale, rotationZ: -5, rotationY: -12 },
+            { x: 0, y: 0, scale: 1, rotationZ: -1.2, rotationY: 0, duration: 0.92, delay: 0.04,
+              ease: "power4.inOut" });
+          gsap.fromTo(caption, { autoAlpha: 0, y: 22 }, { autoAlpha: 1, y: 0, duration: 0.5, delay: 0.48, ease: "power2.out" });
+        });
       }
+
+      window.dispatchEvent(new CustomEvent("loveburst", {
+        detail: { x: originX, y: originY, count: 14, spread: Math.min(180, Math.max(origin.width, origin.height)) }
+      }));
     }
 
     function closePhoto() {
-      viewer.classList.remove("is-open");
-      viewer.setAttribute("aria-hidden", "true");
-      document.body.classList.remove("viewer-open");
-      if (lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true });
+      function finishClose() {
+        viewer.classList.remove("is-open");
+        viewer.setAttribute("aria-hidden", "true");
+        viewer.style.removeProperty("--portal-bg");
+        document.body.classList.remove("viewer-open");
+        if (lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true });
+      }
+      if (hasGSAP && viewer.classList.contains("is-open")) {
+        gsap.killTweensOf([viewer, shell, viewerImg, caption]);
+        gsap.to(caption, { autoAlpha: 0, y: 14, duration: 0.18, ease: "power1.in" });
+        gsap.to(viewerImg, { scale: 0.92, rotationZ: 2, autoAlpha: 0, duration: 0.32, ease: "power2.in" });
+        gsap.to(viewer, { opacity: 0, duration: 0.34, ease: "power1.in", onComplete: function () {
+          gsap.set(viewer, { clearProps: "opacity" });
+          gsap.set([viewerImg, caption, shell], { clearProps: "all" });
+          finishClose();
+        } });
+      } else {
+        finishClose();
+      }
     }
   }
 

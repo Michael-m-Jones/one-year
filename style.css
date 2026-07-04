@@ -189,16 +189,46 @@ body.entered #ambience::before{animation:world-breathe 18s ease-in-out infinite 
 
 /* ============ PHOTO VIEWER ============ */
 .photo-viewer{
+  --portal-bg:none;
+  --portal-x:50%;
+  --portal-y:50%;
   position:fixed;inset:0;z-index:140;display:grid;place-items:center;padding:28px;
-  opacity:0;visibility:hidden;pointer-events:none;transition:opacity .35s ease, visibility .35s ease
+  opacity:0;visibility:hidden;pointer-events:none;transition:opacity .35s ease, visibility .35s ease;
+  isolation:isolate;overflow:hidden;background:rgba(5,9,24,.72)
 }
 .photo-viewer.is-open{opacity:1;visibility:visible;pointer-events:auto}
+.photo-viewer::before{
+  content:"";position:absolute;inset:-8%;z-index:0;opacity:0;pointer-events:none;
+  background-image:var(--portal-bg);background-size:cover;background-position:center;
+  filter:blur(20px) saturate(1.22) brightness(.7);transform:scale(1.08);
+  transform-origin:var(--portal-x) var(--portal-y);
+  transition:opacity .6s ease, transform 1.4s cubic-bezier(.2,.8,.2,1)
+}
+.photo-viewer::after{
+  content:"";position:absolute;inset:0;z-index:1;opacity:0;pointer-events:none;
+  background:
+    radial-gradient(circle at var(--portal-x) var(--portal-y), rgba(var(--mood-c),.2), transparent 28%),
+    radial-gradient(circle at 18% 82%, rgba(var(--mood-b),.18), transparent 34%),
+    linear-gradient(180deg, rgba(5,9,24,.1), rgba(5,9,24,.72));
+  transition:opacity .5s ease
+}
+.photo-viewer.is-open::before{opacity:.82;transform:scale(1.02)}
+.photo-viewer.is-open::after{opacity:1}
 .photo-viewer-backdrop{
-  position:absolute;inset:0;border:0;background:rgba(5,9,24,.76);backdrop-filter:blur(18px);cursor:zoom-out
+  position:absolute;inset:0;z-index:2;border:0;
+  background:
+    radial-gradient(circle at var(--portal-x) var(--portal-y), transparent 0 18%, rgba(5,9,24,.28) 42%, rgba(5,9,24,.78) 100%);
+  backdrop-filter:blur(10px);cursor:zoom-out
 }
 .photo-viewer-shell{
-  position:relative;z-index:1;display:grid;justify-items:center;gap:16px;
-  max-width:min(92vw,1060px);max-height:90vh;perspective:1200px
+  position:relative;z-index:3;display:grid;justify-items:center;gap:16px;
+  max-width:min(92vw,1080px);max-height:90vh;perspective:1200px;transform-style:preserve-3d
+}
+.photo-viewer-shell::before{
+  content:"";position:absolute;inset:-26px;z-index:-1;border-radius:28px;opacity:.78;pointer-events:none;
+  background:
+    conic-gradient(from 120deg, rgba(var(--mood-a),0), rgba(var(--mood-c),.38), rgba(var(--mood-b),.22), rgba(var(--mood-a),0));
+  filter:blur(18px);transform:rotate(-2deg)
 }
 #photo-viewer-img{
   max-width:100%;max-height:76vh;width:auto;height:auto;object-fit:contain;
@@ -207,11 +237,13 @@ body.entered #ambience::before{animation:world-breathe 18s ease-in-out infinite 
   transform:rotate(-1.2deg);transform-origin:center;will-change:transform
 }
 #photo-viewer-caption{
+  max-width:min(84vw,760px);padding:8px 18px;border-radius:999px;
   font-family:var(--hand);font-size:clamp(1.3rem,2.6vw,2rem);color:var(--cream);
-  text-align:center;text-shadow:0 2px 18px rgba(0,0,0,.65)
+  text-align:center;text-shadow:0 2px 18px rgba(0,0,0,.65);
+  background:rgba(8,14,38,.34);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(8px)
 }
 .photo-close{
-  position:absolute;top:-18px;right:-18px;z-index:2;width:44px;height:44px;border-radius:50%;
+  position:absolute;top:-18px;right:-18px;z-index:4;width:44px;height:44px;border-radius:50%;
   border:1px solid rgba(255,255,255,.42);background:rgba(10,18,48,.82);color:var(--cream);
   font-size:1.8rem;line-height:1;cursor:pointer;box-shadow:0 16px 38px -20px rgba(0,0,0,.7)
 }
