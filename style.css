@@ -550,6 +550,62 @@ section[data-section]::selection{background:rgba(255,159,182,.35)}
 .num{display:block;font-family:var(--serif);font-size:clamp(2.4rem,5vw,3.6rem);color:var(--blue);line-height:1}
 .num-label{display:block;margin-top:.6em;font-size:.8rem;letter-spacing:.18em;text-transform:uppercase;color:var(--cream-dim)}
 
+/* ============ MARQUEE INTERLUDE ============ */
+.marquee{padding:7vh 0;overflow:hidden;position:relative;z-index:1}
+.marquee-track{display:inline-flex;white-space:nowrap;will-change:transform;
+  font-family:var(--serif);font-style:italic;font-weight:600;font-size:clamp(2.4rem,7vw,5.4rem);line-height:1.2;
+  color:transparent;-webkit-text-stroke:1px rgba(156,192,255,.34)}
+.marquee-track b{color:var(--blush);-webkit-text-stroke:0;font-style:normal}
+
+/* ============ RECAP FILMSTRIP (the year, one strip) ============ */
+section.recap{padding:0}
+.recap-pin{min-height:100vh;display:flex;flex-direction:column;justify-content:center;overflow:hidden;padding:10vh 0 8vh}
+.recap-head{text-align:center;padding:0 8vw;margin-bottom:5vh}
+.recap-kicker{font-family:var(--hand);font-size:1.5rem;color:var(--blue-soft);margin-bottom:.4em}
+.recap-scroller{width:100%}
+.recap-track{display:flex;align-items:center;gap:clamp(18px,2.4vw,34px);padding:2vh 8vw;width:max-content;will-change:transform}
+.recap-card{position:relative;flex:0 0 auto;width:clamp(190px,21vw,290px);padding:10px 10px 15px;border-radius:6px;
+  background:linear-gradient(180deg,#fffdf4,#f0e5ca);box-shadow:0 26px 60px -30px rgba(0,0,0,.78);
+  transform:rotate(var(--tilt,-2deg))}
+.recap-card:nth-child(even){--tilt:1.7deg}
+.recap-card:nth-child(3n){--tilt:-1deg}
+.recap-card::before{content:"";position:absolute;top:-9px;left:50%;width:26%;height:16px;transform:translateX(-50%) rotate(-2deg);
+  background:linear-gradient(180deg, rgba(255,252,240,.9), rgba(238,227,197,.8));box-shadow:0 1px 3px rgba(90,60,20,.22);opacity:.94}
+.recap-photo{aspect-ratio:3/4;background-size:cover;background-position:center;border-radius:3px}
+.recap-note{display:block;margin-top:9px;font-family:var(--hand);font-size:clamp(.95rem,1.3vw,1.2rem);color:#2a3a66;text-align:center}
+.recap-end{background:
+  radial-gradient(130% 100% at 28% 18%, rgba(156,192,255,.15), transparent 55%),
+  linear-gradient(155deg,#1a3068,#0d1839 72%)}
+.recap-end::before{display:none}
+.recap-cover{aspect-ratio:3/4.34;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+  border:1px solid rgba(255,210,122,.5);border-radius:4px;text-align:center;padding:8%}
+.recap-cover span{font-family:var(--sans);font-size:.62rem;letter-spacing:.34em;text-transform:uppercase;color:var(--gold)}
+.recap-cover strong{font-family:var(--serif);font-weight:700;font-size:clamp(1.5rem,2.4vw,2.2rem);line-height:1.1;color:#f4ecd9}
+.recap-progress{position:relative;width:min(560px,70vw);height:2px;margin:6vh auto 0;border-radius:2px;background:rgba(156,192,255,.18)}
+.recap-progress i{position:absolute;inset:0;border-radius:2px;transform:scaleX(0);transform-origin:0 50%;
+  background:linear-gradient(90deg,var(--blue),var(--blush))}
+.recap-heart{position:absolute;left:0;top:50%;transform:translate(-50%,-54%);font-size:1.05rem;color:var(--blush);
+  text-shadow:0 0 14px rgba(255,159,182,.8)}
+/* mobile / no-pin fallback: a swipeable strip */
+.recap-swipe .recap-scroller{overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;scrollbar-width:none}
+.recap-swipe .recap-scroller::-webkit-scrollbar{display:none}
+.recap-swipe .recap-card{scroll-snap-align:center}
+.recap-swipe .recap-progress{display:none}
+
+/* ============ JOURNEY RAIL (injected, desktop) ============ */
+.journey-rail{position:fixed;right:22px;top:50%;transform:translateY(-50%);z-index:95;display:flex;flex-direction:column;gap:16px;
+  padding:14px 10px;border-radius:999px;background:rgba(8,14,38,.34);border:1px solid rgba(156,192,255,.14);
+  backdrop-filter:blur(8px);opacity:1;transition:opacity .6s ease}
+body.book-intro-playing .journey-rail{opacity:0;pointer-events:none}
+.journey-rail button{position:relative;width:10px;height:10px;border-radius:50%;border:0;padding:0;cursor:pointer;
+  background:rgba(156,192,255,.32);transition:background .3s ease, box-shadow .3s ease, transform .3s ease}
+.journey-rail button:hover{background:rgba(var(--mood-c),.9);transform:scale(1.25)}
+.journey-rail button.is-here{background:rgb(var(--mood-c));box-shadow:0 0 12px rgba(var(--mood-c),.85);transform:scale(1.3)}
+.journey-rail .rail-label{position:absolute;right:22px;top:50%;transform:translateY(-50%) translateX(6px);white-space:nowrap;
+  font-family:var(--hand);font-size:1.05rem;color:var(--cream);opacity:0;pointer-events:none;
+  text-shadow:0 2px 12px rgba(0,0,0,.7);transition:opacity .3s ease, transform .3s ease}
+.journey-rail button:hover .rail-label,.journey-rail button.is-here .rail-label{opacity:1;transform:translateY(-50%) translateX(0)}
+
 /* ============ LETTER ============ */
 .letter{max-width:980px;margin:0 auto;text-align:center;min-height:110vh;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .letter-stage{
@@ -659,6 +715,10 @@ section[data-section]::selection{background:rgba(255,159,182,.35)}
   .book-back::before{left:-6px;width:13px}
   .intro-skip{right:14px;bottom:14px;padding:8px 14px;font-size:.7rem}
   .chapter-ghost{right:0;-webkit-text-stroke-width:1px}
+  .journey-rail{display:none}
+  .marquee{padding:5vh 0}
+  .recap-pin{min-height:auto;padding:6vh 0}
+  .recap-card{width:min(62vw,240px)}
   .hero-content{padding:0 7vw}
   .r-left,.r-right{transform:translateY(28px)}
   .moment{grid-template-columns:1fr;gap:26px;min-height:auto}

@@ -133,6 +133,10 @@
     setupJourneyCanvas(hasGSAP);
     setupOpeningFilm(hasGSAP, heavy, lenis); // before the reveal system: the film owns the hero copy
     setupJourneyEnhancements(hasGSAP); // also before it: chapter/milestone/finale own their reveals now
+    setupRecapStrip(hasGSAP);
+    setupMarquee(hasGSAP);
+    setupJourneyRail(lenis);
+    setupVelocityFeel(hasGSAP);
 
     /* --- Entrance reveals: IntersectionObserver adds .in (fires for above-the-fold) --- */
     // Tag moment text with directional reveals. Frames stay unmasked so photos always paint.
@@ -606,6 +610,156 @@
     }
   }
 
+  /* ---------- 3⅞. RECAP FILMSTRIP: the year scrolls sideways ----------
+     Desktop pins the section and scrubs the strip horizontally; small screens
+     get a native swipeable strip instead (pinning on touch is jittery).      */
+  function setupRecapStrip(hasGSAP) {
+    const recap = document.querySelector(".recap");
+    if (!recap) return;
+    const track = recap.querySelector(".recap-track");
+    const bar = recap.querySelector(".recap-progress i");
+    const heart = recap.querySelector(".recap-heart");
+
+    if (!hasGSAP || reduceMotion || isSmall) {
+      recap.classList.add("recap-swipe");
+      return;
+    }
+
+    const distance = function () { return Math.max(0, track.scrollWidth - innerWidth); };
+    gsap.to(track, {
+      x: function () { return -distance(); },
+      ease: "none",
+      scrollTrigger: {
+        trigger: recap,
+        start: "top top",
+        end: function () { return "+=" + Math.max(600, distance()); },
+        pin: true,
+        scrub: 0.5,
+        invalidateOnRefresh: true,
+        onUpdate: function (self) {
+          if (bar) bar.style.transform = "scaleX(" + self.progress.toFixed(4) + ")";
+          if (heart) heart.style.left = (self.progress * 100).toFixed(2) + "%";
+        }
+      }
+    });
+  }
+
+  /* ---------- 3⅞b. MARQUEE: drifts on its own, surges with the scroll ---------- */
+  function setupMarquee(hasGSAP) {
+    const track = document.querySelector(".marquee-track");
+    if (!track || !hasGSAP || reduceMotion) return;
+
+    const unit = track.innerHTML;
+    // two identical halves so a half-width modulo wrap is seamless
+    let copies = 1;
+    while (track.scrollWidth < innerWidth * 1.2 && copies < 12) {
+      track.innerHTML += unit;
+      copies++;
+    }
+    track.innerHTML += track.innerHTML;
+
+    let x = 0;
+    let boost = 0;
+    const baseSpeed = isSmall ? 0.45 : 0.7;
+    if (window.ScrollTrigger) {
+      ScrollTrigger.create({
+        start: 0, end: "max",
+        onUpdate: function (self) {
+          boost = gsap.utils.clamp(-13, 13, self.getVelocity() / 240);
+        }
+      });
+    }
+    gsap.ticker.add(function () {
+      boost *= 0.94;
+      x -= baseSpeed + boost;
+      const half = track.scrollWidth / 2;
+      if (half > 0) {
+        if (x <= -half) x += half;
+        if (x > 0) x -= half;
+      }
+      gsap.set(track, { x: x });
+    });
+  }
+
+  /* ---------- 3⅞c. JOURNEY RAIL: a constellation of stops (desktop) ---------- */
+  function setupJourneyRail(lenis) {
+    if (isSmall || innerWidth < 1100) return;
+    const chapters = document.querySelectorAll(".chapter");
+    const defs = [
+      [document.querySelector(".cinematic-hero"), "the book"],
+      [chapters[0], "ch. 01"],
+      [document.querySelector(".milestone"), "official"],
+      [chapters[1], "ch. 02"],
+      [document.querySelector(".wall-sec"), "all at once"],
+      [document.querySelector(".numbers"), "by the numbers"],
+      [document.querySelector(".recap"), "rewind"],
+      [document.querySelector(".letter"), "for you"],
+      [document.querySelector(".finale"), "year two"]
+    ].filter(function (d) { return !!d[0]; });
+    if (defs.length < 2) return;
+
+    const rail = document.createElement("nav");
+    rail.className = "journey-rail";
+    rail.setAttribute("aria-label", "journey");
+    const stops = defs.map(function (def) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      const label = document.createElement("span");
+      label.className = "rail-label";
+      label.textContent = def[1];
+      btn.appendChild(label);
+      btn.setAttribute("aria-label", "go to " + def[1]);
+      btn.addEventListener("click", function () {
+        const target = def[0].getBoundingClientRect().top + scrollY + 2;
+        if (lenis && typeof lenis.scrollTo === "function") {
+          lenis.scrollTo(target, { duration: 1.6, easing: function (t) { return 1 - Math.pow(1 - t, 3); } });
+        } else {
+          scrollTo({ top: target, behavior: reduceMotion ? "auto" : "smooth" });
+        }
+      });
+      rail.appendChild(btn);
+      return { el: def[0], btn: btn };
+    });
+    document.body.appendChild(rail);
+
+    addEventListener("storyscenechange", function (e) {
+      const scene = e.detail && e.detail.scene;
+      if (!scene) return;
+      let here = 0;
+      stops.forEach(function (stop, i) {
+        const pos = stop.el.compareDocumentPosition(scene);
+        // the active stop is the last one the scene sits inside of or after
+        if (stop.el === scene || (pos & 16) || (pos & 4)) here = i;
+      });
+      stops.forEach(function (stop, i) { stop.btn.classList.toggle("is-here", i === here); });
+    });
+  }
+
+  /* ---------- 3⅞d. VELOCITY FEEL: photos lean into a fast scroll ---------- */
+  function setupVelocityFeel(hasGSAP) {
+    if (!heavy || !hasGSAP || !window.ScrollTrigger) return;
+    const targets = document.querySelectorAll(".moment-media");
+    if (!targets.length) return;
+    const setters = Array.prototype.map.call(targets, function (el) {
+      return gsap.quickSetter(el, "skewY", "deg");
+    });
+    const clampSkew = gsap.utils.clamp(-4.5, 4.5);
+    const proxy = { skew: 0 };
+    function apply() {
+      for (let i = 0; i < setters.length; i++) setters[i](proxy.skew);
+    }
+    ScrollTrigger.create({
+      start: 0, end: "max",
+      onUpdate: function (self) {
+        const skew = clampSkew(self.getVelocity() / -420);
+        if (Math.abs(skew) > Math.abs(proxy.skew)) {
+          proxy.skew = skew;
+          gsap.to(proxy, { skew: 0, duration: 0.85, ease: "power3.out", overwrite: true, onUpdate: apply });
+        }
+      }
+    });
+  }
+
   /* ---------- 3A. IMAGE LOADING: keep the scroll story from outrunning photos ---------- */
   function setupImageLoading() {
     const imgs = Array.prototype.slice.call(document.querySelectorAll("img"));
@@ -657,7 +811,7 @@
     const root = document.documentElement;
     const photoLayers = Array.prototype.slice.call(ambience.querySelectorAll(".ambient-photo"));
     const scenes = Array.prototype.slice.call(document.querySelectorAll(
-      ".hero, .chapter, .milestone, [data-moment], .wall-sec, .numbers, .letter, .finale"
+      ".hero, .chapter, .milestone, [data-moment], .wall-sec, .numbers, .recap, .letter, .finale"
     ));
     scenes.forEach(function (scene, i) { scene.dataset.storyIndex = i; });
     const palettes = [
@@ -797,6 +951,8 @@
     function getWorldIndex(scene, index) {
       const text = (scene.textContent || "").toLowerCase();
       if (scene.classList.contains("hero")) return 0;
+      // recap first: its card notes mention nearly every keyword below
+      if (scene.classList.contains("recap")) return 8;
       if (scene.classList.contains("finale") || scene.classList.contains("letter")) return 15;
       if (scene.classList.contains("wall-sec") || scene.classList.contains("numbers")) return 13;
       if (scene.classList.contains("milestone") || text.indexOf("official.") !== -1) return 4;
@@ -844,7 +1000,7 @@
     if (!constellationCtx || !journeyCtx) return;
 
     const sceneEls = Array.prototype.slice.call(document.querySelectorAll(
-      ".hero, .chapter, .milestone, [data-moment], .wall-sec, .numbers, .letter, .finale"
+      ".hero, .chapter, .milestone, [data-moment], .wall-sec, .numbers, .recap, .letter, .finale"
     ));
     if (!sceneEls.length) return;
 
@@ -1664,6 +1820,13 @@
         window.dispatchEvent(new CustomEvent("loveburst", {
           detail: { x: innerWidth / 2, y: innerHeight * 0.55, count: 26, spread: 150 }
         }));
+        // the letter writes itself in, line by line
+        if (hasGSAP && !reduceMotion) {
+          gsap.fromTo(paper.querySelectorAll(".letter-date, .letter-handwriting p"),
+            { clipPath: "inset(-6px 100% -6px 0)", opacity: 0.35 },
+            { clipPath: "inset(-6px 0% -6px 0)", opacity: 1, duration: 1.05, stagger: 0.5,
+              ease: "power1.inOut", delay: 0.4, clearProps: "clipPath,opacity" });
+        }
       }
     }
 
@@ -1712,6 +1875,9 @@
       const eased = 1 - Math.pow(1 - p, 3);
       el.textContent = Math.floor(eased * target).toLocaleString();
       if (p < 1) requestAnimationFrame(tick);
+      else if (window.gsap && !reduceMotion) {
+        gsap.fromTo(el, { scale: 1.16 }, { scale: 1, duration: 0.55, ease: "back.out(2.4)" });
+      }
     }
     requestAnimationFrame(tick);
   }
