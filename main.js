@@ -17,6 +17,10 @@
   const musicToggle = document.getElementById("music-toggle");
   const progress = document.getElementById("progress");
 
+  // reloads (incl. the finale replay button) must start the film from the top,
+  // not wherever the browser restored the old scroll position
+  try { history.scrollRestoration = "manual"; } catch (e) {}
+
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const isSmall = window.matchMedia("(max-width: 760px)").matches;
   const heavy = !reduceMotion && !isSmall; // scrub parallax only where it's smooth
@@ -128,6 +132,7 @@
     setupAmbientStory(hasGSAP);
     setupJourneyCanvas(hasGSAP);
     setupOpeningFilm(hasGSAP, heavy, lenis); // before the reveal system: the film owns the hero copy
+    setupJourneyEnhancements(hasGSAP); // also before it: chapter/milestone/finale own their reveals now
 
     /* --- Entrance reveals: IntersectionObserver adds .in (fires for above-the-fold) --- */
     // Tag moment text with directional reveals. Frames stay unmasked so photos always paint.
@@ -136,10 +141,6 @@
       const text = m.querySelector(".moment-text");
       if (text) text.classList.add(reverse ? "r-right" : "r-left");
     });
-    // milestone word is animated by GSAP scrub instead of the fade system
-    const mWord = document.querySelector(".milestone-word");
-    if (mWord && heavy && hasGSAP) mWord.classList.remove("reveal");
-
     // stagger timing for grouped reveals
     document.querySelectorAll("[data-section]").forEach(function (sec) {
       sec.querySelectorAll(".reveal").forEach(function (el, i) { el.style.transitionDelay = (i * 0.08) + "s"; });
@@ -187,13 +188,6 @@
         gsap.fromTo(t, { yPercent: 14 }, { yPercent: -14, ease: "none",
           scrollTrigger: { trigger: t.closest("[data-section]"), start: "top bottom", end: "bottom top", scrub: true } });
       });
-
-      // Milestone "Official" grows + brightens as you scroll through it
-      if (mWord) {
-        gsap.fromTo(mWord, { scale: 0.72, opacity: 0.15, letterSpacing: "0.25em" },
-          { scale: 1, opacity: 1, letterSpacing: "0em", ease: "none",
-            scrollTrigger: { trigger: ".milestone", start: "top 85%", end: "center center", scrub: true } });
-      }
 
       // Photo wall erupts upward like the book spilling open.
       gsap.fromTo(".wall img", { y: 120, rotateZ: function (i) { return (i % 2 ? 7 : -7); }, scale: 0.92 },
@@ -410,6 +404,7 @@
       float.kill();
       gsap.set(".book-stage", { display: "none" });
       if (lenis && typeof lenis.start === "function") lenis.start();
+      setupHeroExit(); // scroll now walks us out of the photo and into the story
       removeSkipHandlers();
       if (skipBtn) {
         skipBtn.classList.remove("is-live");
@@ -462,6 +457,153 @@
       img.src = src;
       if (img.decode) img.decode().then(resolve).catch(resolve);
     });
+  }
+
+  /* ---------- 3¾. THE JOURNEY PASS: scroll choreography after the film ----------
+     The film ends inside the Hawaii photo; from there the scroll has to feel like
+     stepping out of that photo and walking the year. Everything here is scrub-driven
+     so it tracks the reader's hand in both directions.                              */
+  function setupHeroExit() {
+    // created only after the film finishes (the film owns these elements until then)
+    if (setupHeroExit.done || !window.gsap || !window.ScrollTrigger || reduceMotion) return;
+    setupHeroExit.done = true;
+    const hero = document.querySelector(".cinematic-hero");
+    if (!hero) return;
+    const tl = gsap.timeline({
+      scrollTrigger: { trigger: hero, start: "top top", end: "bottom 30%", scrub: 0.6 }
+    });
+    tl.to(".scroll-cue", { autoAlpha: 0, duration: 0.16, ease: "none" }, 0)
+      .to(".hero-photo", { scale: 1.26, yPercent: -7, duration: 1, ease: "none" }, 0)
+      .to(".portal-haze", { opacity: 0.1, duration: 1, ease: "none" }, 0)
+      .to(".hero-content .eyebrow", { yPercent: -220, autoAlpha: 0, duration: 0.75, ease: "none" }, 0)
+      .to(".hero-title span", { yPercent: -130, autoAlpha: 0, duration: 0.75, stagger: 0.09, ease: "none" }, 0.06)
+      .to(".hero-sub", { yPercent: -90, autoAlpha: 0, duration: 0.75, ease: "none" }, 0.3);
+  }
+
+  function setupJourneyEnhancements(hasGSAP) {
+    const canAnimate = hasGSAP && !reduceMotion;
+
+    // inked underline beneath every date (draws via CSS once .moment-text gets .in)
+    document.querySelectorAll(".moment-date").forEach(function (date) {
+      const ink = document.createElement("i");
+      ink.className = "date-ink";
+      date.appendChild(ink);
+    });
+
+    // replay loop: fade out, reload — the session stays unlocked, so the film replays
+    const replay = document.getElementById("replay");
+    if (replay) {
+      replay.addEventListener("click", function () {
+        replay.disabled = true;
+        document.body.style.transition = "opacity .55s ease";
+        document.body.style.opacity = "0";
+        setTimeout(function () { location.reload(); }, 580);
+      });
+    }
+
+    if (!canAnimate) return;
+
+    // chapter interludes: ghost numeral drifts through, the title rises word by
+    // word out of a clipped line, and the rule beneath draws itself
+    document.querySelectorAll(".chapter").forEach(function (chapter) {
+      const num = chapter.querySelector(".chapter-num");
+      const title = chapter.querySelector(".chapter-title");
+
+      const digits = num && num.textContent.match(/\d+/);
+      if (digits) {
+        const ghost = document.createElement("span");
+        ghost.className = "chapter-ghost";
+        ghost.setAttribute("aria-hidden", "true");
+        ghost.textContent = digits[0];
+        chapter.appendChild(ghost);
+        gsap.set(ghost, { yPercent: 26, autoAlpha: 0 });
+        gsap.timeline({ scrollTrigger: { trigger: chapter, start: "top 82%", end: "bottom 30%", scrub: 0.5 } })
+          .to(ghost, { yPercent: 0, autoAlpha: 0.85, duration: 0.45, ease: "none" })
+          .to(ghost, { yPercent: -26, autoAlpha: 0, duration: 0.55, ease: "none" });
+      }
+
+      if (title) {
+        title.classList.remove("reveal");
+        const words = title.textContent.trim().split(/\s+/);
+        title.innerHTML = words.map(function (word) {
+          return '<span class="w"><span class="wi">' + word + "</span></span>";
+        }).join(" ");
+        gsap.fromTo(title.querySelectorAll(".wi"),
+          { yPercent: 118, rotationZ: 2.5 },
+          { yPercent: 0, rotationZ: 0, stagger: 0.14, ease: "none",
+            scrollTrigger: { trigger: chapter, start: "top 74%", end: "top 26%", scrub: 0.5 } });
+      }
+
+      chapter.style.setProperty("--rule", "0");
+      gsap.to(chapter, { "--rule": 1, ease: "none",
+        scrollTrigger: { trigger: chapter, start: "top 58%", end: "bottom 62%", scrub: 0.5 } });
+    });
+
+    // each photo develops like a print as it enters the light
+    document.querySelectorAll(".moment .frame").forEach(function (frame) {
+      const veil = document.createElement("div");
+      veil.className = "frame-veil";
+      frame.appendChild(veil);
+      gsap.to(veil, { opacity: 0, ease: "none",
+        scrollTrigger: { trigger: frame, start: "top 94%", end: "top 46%", scrub: 0.4 } });
+    });
+
+    // "Official." stamps in letter by letter, then bursts
+    const mWord = document.querySelector(".milestone-word");
+    if (mWord) {
+      mWord.classList.remove("reveal");
+      const text = mWord.textContent.trim();
+      mWord.setAttribute("aria-label", text);
+      mWord.innerHTML = text.split("").map(function (ch) {
+        return '<span class="mchar" aria-hidden="true">' + (ch === " " ? "&nbsp;" : ch) + "</span>";
+      }).join("");
+      // chars clip their own gradient now; the parent's would ghost under transforms
+      mWord.style.background = "none";
+      gsap.set(mWord, { perspective: 800 });
+      gsap.fromTo(mWord, { scale: 0.8 }, { scale: 1, ease: "none",
+        scrollTrigger: { trigger: ".milestone", start: "top 85%", end: "center 52%", scrub: 0.5 } });
+      gsap.fromTo(mWord.querySelectorAll(".mchar"),
+        { yPercent: 62, autoAlpha: 0, rotationX: -86 },
+        { yPercent: 0, autoAlpha: 1, rotationX: 0, stagger: 0.05, ease: "none",
+          scrollTrigger: { trigger: ".milestone", start: "top 80%", end: "center 55%", scrub: 0.5 } });
+      ScrollTrigger.create({
+        trigger: ".milestone", start: "center 62%", once: true,
+        onEnter: function () {
+          const rect = mWord.getBoundingClientRect();
+          window.dispatchEvent(new CustomEvent("loveburst", {
+            detail: { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2,
+              count: 22, spread: Math.min(320, rect.width * 0.7) }
+          }));
+        }
+      });
+    }
+
+    // finale: the toast settles in, and hearts drift while we stay on it
+    const finaleTitle = document.querySelector(".finale-title");
+    if (finaleTitle) {
+      finaleTitle.classList.remove("reveal");
+      gsap.fromTo(finaleTitle, { autoAlpha: 0, scale: 0.92, yPercent: 10 },
+        { autoAlpha: 1, scale: 1, yPercent: 0, ease: "none",
+          scrollTrigger: { trigger: ".finale", start: "top 85%", end: "center 55%", scrub: 0.5 } });
+    }
+    if (!isSmall) {
+      let rainId = null;
+      addEventListener("storyscenechange", function (e) {
+        const scene = e.detail && e.detail.scene;
+        const isFinale = !!(scene && scene.classList && scene.classList.contains("finale"));
+        if (isFinale && rainId === null) {
+          rainId = setInterval(function () {
+            window.dispatchEvent(new CustomEvent("loveburst", {
+              detail: { x: innerWidth * (0.2 + Math.random() * 0.6),
+                y: innerHeight * (0.18 + Math.random() * 0.35), count: 7, spread: 70 }
+            }));
+          }, 1400);
+        } else if (!isFinale && rainId !== null) {
+          clearInterval(rainId);
+          rainId = null;
+        }
+      });
+    }
   }
 
   /* ---------- 3A. IMAGE LOADING: keep the scroll story from outrunning photos ---------- */
@@ -716,6 +858,7 @@
       };
     });
     const stars = createStars(isSmall ? 48 : 96);
+    const meteors = [];
     const root = document.documentElement;
     const fallbackMood = { a: "111 160 255", b: "255 159 182", c: "255 210 122", deep: "8 14 38" };
 
@@ -753,6 +896,19 @@
             window.dispatchEvent(new CustomEvent("loveburst", {
               detail: { x: node.x, y: node.y, count: 10, spread: 54 }
             }));
+          }
+          // a shooting star marks the big beats of the journey
+          const scene = e.detail.scene;
+          if (!reduceMotion && scene && scene.classList &&
+              (scene.classList.contains("chapter") || scene.classList.contains("milestone") || scene.classList.contains("finale"))) {
+            meteors.push({
+              x: w * (0.1 + Math.random() * 0.28),
+              y: h * (0.07 + Math.random() * 0.15),
+              dx: w * (0.3 + Math.random() * 0.16),
+              dy: h * (0.14 + Math.random() * 0.1),
+              born: performance.now(),
+              life: 1150
+            });
           }
         }
       }
@@ -852,6 +1008,7 @@
 
       drawWorldCurtains(constellationCtx, now, mood);
       drawStarWorld(constellationCtx, now, mood);
+      drawMeteors(constellationCtx, now, mood);
       drawMemoryConstellations(constellationCtx, nodes, now, mood);
       drawFinalHeart(constellationCtx, now, mood);
       drawJourneyPath(journeyCtx, nodes, now, mood);
@@ -1162,6 +1319,41 @@
           }
         }
       });
+      ctx.restore();
+    }
+
+    function drawMeteors(ctx, now, mood) {
+      if (!meteors.length) return;
+      ctx.save();
+      ctx.globalCompositeOperation = "screen";
+      ctx.lineCap = "round";
+      for (let i = meteors.length - 1; i >= 0; i--) {
+        const m = meteors[i];
+        const t = (now - m.born) / m.life;
+        if (t >= 1) { meteors.splice(i, 1); continue; }
+        const x = m.x + m.dx * t;
+        const y = m.y + m.dy * t;
+        const tx = x - m.dx * 0.16;
+        const ty = y - m.dy * 0.16;
+        const fade = t < 0.18 ? t / 0.18 : 1 - (t - 0.18) / 0.82;
+        const grad = ctx.createLinearGradient(tx, ty, x, y);
+        grad.addColorStop(0, rgba(mood.a, 0));
+        grad.addColorStop(1, rgba(mood.c, 0.92));
+        ctx.globalAlpha = 0.85 * fade;
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = isSmall ? 1.4 : 2;
+        ctx.beginPath();
+        ctx.moveTo(tx, ty);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        ctx.fillStyle = rgba(mood.c, 0.95);
+        ctx.shadowColor = rgba(mood.c, 1);
+        ctx.shadowBlur = 14;
+        ctx.beginPath();
+        ctx.arc(x, y, isSmall ? 1.6 : 2.3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
       ctx.restore();
     }
 

@@ -431,11 +431,19 @@ section[data-section]::selection{background:rgba(255,159,182,.35)}
 @keyframes cue{0%{transform:scaleY(.3);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}50.1%{transform-origin:bottom}100%{transform:scaleY(.3);transform-origin:bottom}}
 
 /* ============ CHAPTER ============ */
-.chapter{min-height:60vh;display:flex;flex-direction:column;justify-content:center;align-items:flex-start}
+.chapter{min-height:60vh;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;overflow:hidden}
 .chapter::after{
   content:"";position:absolute;left:8vw;right:8vw;bottom:8vh;height:1px;
   background:linear-gradient(90deg, transparent, rgba(156,192,255,.28), transparent);
+  transform:scaleX(var(--rule,1));transform-origin:0 50%;
 }
+/* chapter interlude dressing — ghost numeral + word-by-word title (injected by JS) */
+.chapter-ghost{
+  position:absolute;right:1vw;top:calc(50% - .5em);z-index:-1;line-height:1;pointer-events:none;user-select:none;
+  font-family:var(--serif);font-weight:700;font-size:clamp(11rem,24vw,22rem);
+  color:transparent;-webkit-text-stroke:1.5px rgba(156,192,255,.16);opacity:0}
+.chapter .chapter-title .w{display:inline-block;overflow:hidden;vertical-align:bottom;padding-bottom:.14em;margin-bottom:-.14em}
+.chapter .chapter-title .wi{display:inline-block;will-change:transform}
 
 /* ============ TIMELINE ============ */
 .timeline{display:flex;flex-direction:column;gap:12vh}
@@ -450,7 +458,12 @@ section[data-section]::selection{background:rgba(255,159,182,.35)}
 }
 .moment.reverse .moment-media::before{inset:8% 10% -7% -6%;transform:rotate(3deg)}
 .moment-text{transform-style:preserve-3d;will-change:transform}
-.moment-text .moment-date{font-family:var(--hand);font-size:1.5rem;color:var(--blue-soft)}
+.moment-text .moment-date{font-family:var(--hand);font-size:1.5rem;color:var(--blue-soft);position:relative;display:inline-block}
+/* inked underline that draws itself once the memory settles in */
+.date-ink{position:absolute;left:1px;right:-10px;bottom:-2px;height:2px;border-radius:2px;
+  background:linear-gradient(90deg, rgba(var(--mood-c),.85), rgba(var(--mood-b),.5) 70%, transparent);
+  transform:scaleX(0);transform-origin:0 50%;transition:transform 1.1s cubic-bezier(.2,.8,.2,1) .45s}
+.moment-text.in .date-ink{transform:scaleX(1)}
 .moment-text .moment-title{font-family:var(--serif);font-size:clamp(2rem,5vw,3.4rem);margin:.1em 0 .5em;line-height:1.05}
 .moment-text p{color:var(--cream-dim);font-size:1.08rem;line-height:1.7;max-width:46ch;font-weight:300}
 .moment.placeholder{opacity:.78}
@@ -482,6 +495,11 @@ section[data-section]::selection{background:rgba(255,159,182,.35)}
 }
 .frame.land{aspect-ratio:3/2}
 .frame img{width:100%;height:100%;object-fit:cover;display:block;will-change:transform;position:relative;z-index:1}
+/* photographs "develop" like prints as they enter the light (JS scrubs opacity to 0) */
+.frame-veil{position:absolute;inset:0;z-index:2;pointer-events:none;
+  background:
+    radial-gradient(120% 90% at 50% 18%, rgba(216,228,255,.2), transparent 62%),
+    linear-gradient(160deg, rgba(12,20,52,.62), rgba(120,142,196,.24) 48%, rgba(10,16,44,.66))}
 .moment:hover .frame{filter:brightness(1.07);box-shadow:0 44px 92px -34px rgba(0,0,0,.82)}
 .moment:hover .frame::before,.frame.is-tilting::before{opacity:1;transform:translateX(45%) rotate(8deg)}
 .moment-media.duo{display:flex;flex-direction:column;gap:16px}
@@ -491,6 +509,10 @@ section[data-section]::selection{background:rgba(255,159,182,.35)}
 .milestone-date{font-family:var(--sans);letter-spacing:.45em;text-transform:uppercase;font-size:.8rem;color:var(--blue);margin-bottom:.6em}
 .milestone-word{font-family:var(--serif);font-size:clamp(4rem,16vw,11rem);line-height:1;
   background:linear-gradient(180deg,#fff, var(--blue-soft));-webkit-background-clip:text;background-clip:text;color:transparent}
+/* letter-by-letter stamp (JS splits the word; each char clips its own gradient) */
+.milestone-word .mchar{display:inline-block;background:linear-gradient(180deg,#fff,var(--blue-soft));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  transform-origin:50% 82%;will-change:transform}
 .milestone-sub{font-family:var(--hand);font-size:1.7rem;color:var(--cream-dim);margin-top:.4em}
 
 /* photo wall (masonry) */
@@ -594,6 +616,11 @@ section[data-section]::selection{background:rgba(255,159,182,.35)}
 .finale{min-height:90vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
 .finale-title{font-family:var(--serif);font-size:clamp(2.6rem,8vw,6rem);line-height:1.1}
 .finale-sub{font-size:2.4rem;color:var(--blush);margin-top:.4em}
+.replay-btn{margin-top:3em;padding:13px 32px;border-radius:999px;border:1px solid rgba(156,192,255,.4);
+  background:rgba(10,18,48,.45);backdrop-filter:blur(6px);color:var(--cream);
+  font-family:var(--hand);font-size:1.4rem;cursor:pointer;
+  transition:transform .25s ease, background .25s ease, border-color .25s ease}
+.replay-btn:hover{transform:translateY(-3px);background:rgba(156,192,255,.14);border-color:rgba(156,192,255,.7)}
 
 /* ============ MOBILE ============ */
 @media(max-width:760px){
@@ -631,6 +658,7 @@ section[data-section]::selection{background:rgba(255,159,182,.35)}
   .endpaper-note{font-size:1.05rem}
   .book-back::before{left:-6px;width:13px}
   .intro-skip{right:14px;bottom:14px;padding:8px 14px;font-size:.7rem}
+  .chapter-ghost{right:0;-webkit-text-stroke-width:1px}
   .hero-content{padding:0 7vw}
   .r-left,.r-right{transform:translateY(28px)}
   .moment{grid-template-columns:1fr;gap:26px;min-height:auto}
