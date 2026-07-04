@@ -253,8 +253,12 @@
       bookEl.style.setProperty("--z-base", Z.base + "px");
       bookEl.style.setProperty("--stack", (coverZ - 2).toFixed(1) + "px");
     }
-    // pacing: the whole reel is driven by these four numbers
-    const OPEN_AT = 1.25, OPEN_DUR = 2.3, READ = 2.0, TURN = 1.45;
+    // pacing: the whole reel is driven by these numbers.
+    // Each page turn is two explicit segments so the tail never rushes:
+    // TURN_LIFT swings the page up past vertical (brisk, like a real flick),
+    // TURN_FALL is the long, continuously-decelerating settle onto the stack (no snap).
+    const OPEN_AT = 1.25, OPEN_DUR = 2.3, READ = 2.0, TURN_LIFT = 0.55, TURN_FALL = 1.3;
+    const TURN = TURN_LIFT + TURN_FALL;
     const turnAt = function (i) { return OPEN_AT + OPEN_DUR + READ + (i - 1) * (TURN + READ); };
     const diveAt = turnAt(N) + TURN + READ + 0.3;
 
@@ -343,17 +347,24 @@
       .to(heroBits, { autoAlpha: 1, y: 0, duration: 0.8, stagger: 0.09, ease: "power3.out" }, "dive+=1.15");
 
     function addTurn(label, leaf, zFrom, zLand, underCast, landCast, at) {
+      // Two explicit segments (not the {prop:[a,b,c]} shorthand — that shorthand
+      // was compressing almost all the rotation into the tween's final fraction,
+      // which read as a hang-then-snap). Segment 1 flicks the page up past
+      // vertical; segment 2 is a long, continuously-decelerating fall with no
+      // re-acceleration, so it settles instead of slamming shut.
+      const s = TURN / 1.45; // rescales the shadow/light beats below, tuned against the old 1.45s turn
       tl.add(label, at)
-        .to(leaf, { keyframes: { rotationY: [0, -74, -180], z: [zFrom, zFrom + Z.lift, zLand], skewY: [0, -1.7, 0] }, duration: 1.45, ease: "power2.inOut" }, label)
-        .to(leaf + " .leaf-front .leaf-shade", { opacity: 0.32, duration: 0.7, ease: "sine.in" }, label)
-        .fromTo(leaf + " .leaf-back .leaf-shade", { opacity: 0.5 }, { opacity: 0.06, duration: 0.75, ease: "sine.out" }, label + "+=0.62")
-        .fromTo(underCast, { opacity: 0, scaleX: 0.3 }, { opacity: 0.4, scaleX: 1.05, duration: 0.7, ease: "sine.out" }, label)
-        .to(underCast, { opacity: 0, duration: 0.7, ease: "sine.in" }, label + "+=0.7")
-        .fromTo(landCast, { opacity: 0, scaleX: 1.15 }, { opacity: 0.34, scaleX: 1, duration: 0.55, ease: "sine.out" }, label + "+=0.55")
-        .to(landCast, { opacity: 0, duration: 0.45, ease: "sine.out" }, label + "+=1.18")
-        .to(".book-ground", { opacity: 0.82, duration: 0.2, yoyo: true, repeat: 1, ease: "sine.inOut" }, label + "+=1.2")
-        .to(".book-glow", { opacity: 0.3, duration: 0.4, ease: "sine.out" }, label + "+=0.9")
-        .to(".book-glow", { opacity: 0.13, duration: 0.6, ease: "sine.inOut" }, label + "+=1.4");
+        .to(leaf, { rotationY: -74, z: zFrom + Z.lift, skewY: -1.7, duration: TURN_LIFT, ease: "power1.in" }, label)
+        .to(leaf, { rotationY: -180, z: zLand, skewY: 0, duration: TURN_FALL, ease: "power2.out" }, label + "+=" + TURN_LIFT)
+        .to(leaf + " .leaf-front .leaf-shade", { opacity: 0.32, duration: 0.7 * s, ease: "sine.in" }, label)
+        .fromTo(leaf + " .leaf-back .leaf-shade", { opacity: 0.5 }, { opacity: 0.06, duration: 0.75 * s, ease: "sine.out" }, label + "+=" + (0.62 * s).toFixed(2))
+        .fromTo(underCast, { opacity: 0, scaleX: 0.3 }, { opacity: 0.4, scaleX: 1.05, duration: 0.7 * s, ease: "sine.out" }, label)
+        .to(underCast, { opacity: 0, duration: 0.7 * s, ease: "sine.in" }, label + "+=" + (0.7 * s).toFixed(2))
+        .fromTo(landCast, { opacity: 0, scaleX: 1.15 }, { opacity: 0.34, scaleX: 1, duration: 0.55 * s, ease: "sine.out" }, label + "+=" + (0.55 * s).toFixed(2))
+        .to(landCast, { opacity: 0, duration: 0.45 * s, ease: "sine.out" }, label + "+=" + (1.18 * s).toFixed(2))
+        .to(".book-ground", { opacity: 0.82, duration: 0.2, yoyo: true, repeat: 1, ease: "sine.inOut" }, label + "+=" + (1.2 * s).toFixed(2))
+        .to(".book-glow", { opacity: 0.3, duration: 0.4, ease: "sine.out" }, label + "+=" + (0.9 * s).toFixed(2))
+        .to(".book-glow", { opacity: 0.13, duration: 0.6, ease: "sine.inOut" }, label + "+=" + (1.4 * s).toFixed(2));
     }
 
     /* skip: one flick, key, or tap on the pill fast-forwards the film */

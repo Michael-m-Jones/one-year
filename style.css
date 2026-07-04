@@ -349,8 +349,11 @@ section[data-section]::selection{background:rgba(255,159,182,.35)}
 .page-photo.two-b{left:41%;right:5%;top:43%;bottom:8.5%;transform:rotate(1.8deg)}
 .page-photo.duo-a{left:6%;right:20%;top:6%;bottom:53%;transform:rotate(-1.8deg)}
 .page-photo.duo-b{left:20%;right:6%;top:51.5%;bottom:12%;transform:rotate(1.4deg)}
-.two-up .page-caption{left:auto;right:9%;top:6.5%;bottom:auto;transform:rotate(2deg)}
-.leaf-back.two-up .page-caption{right:auto;left:10%;top:auto;bottom:6%;transform:rotate(-2deg)}
+/* two-up captions sit in the empty diagonal corner; without a width cap, long
+   text grows straight into the other photo, so bound + shrink + align it there */
+.two-up .page-caption{left:auto;right:9%;top:6.5%;bottom:auto;max-width:32%;
+  text-align:right;line-height:1.22;font-size:clamp(.7rem,1.25vw,1rem);transform:rotate(2deg)}
+.leaf-back.two-up .page-caption{right:auto;left:9%;top:auto;bottom:7.5%;max-width:27%;text-align:left;transform:rotate(-2deg)}
 .page-photo::before,.page-photo::after{content:"";position:absolute;width:24%;height:8%;opacity:.92;
   background:linear-gradient(180deg, rgba(255,252,240,.88), rgba(238,227,197,.78));
   box-shadow:0 1px 3px rgba(90,60,20,.2)}
@@ -615,7 +618,16 @@ section[data-section]::selection{background:rgba(255,159,182,.35)}
   .cover-title{font-size:clamp(1.5rem,8.5vw,2.6rem)}
   .cover-kicker{font-size:.5rem;letter-spacing:.3em}
   .cover-name{font-size:1rem}
-  .page-caption{font-size:.92rem}
+  /* mobile pages are tiny in absolute px, so a wrapped caption needs more
+     clearance below the photo than the desktop percentages give it */
+  .page-caption{font-size:.72rem;line-height:1.2;max-width:78%}
+  .page-photo{bottom:22%}
+  .page-photo.tall{bottom:20%}
+  .page-photo.duo-b{bottom:16%}
+  .page-photo.land{bottom:35%}
+  .page-photo.land + .page-caption{bottom:29%}
+  .two-up .page-caption{max-width:27%}
+  .leaf-back.two-up .page-caption{max-width:26%}
   .endpaper-note{font-size:1.05rem}
   .book-back::before{left:-6px;width:13px}
   .intro-skip{right:14px;bottom:14px;padding:8px 14px;font-size:.7rem}
