@@ -515,15 +515,6 @@ section[data-section]::selection{background:rgba(255,159,182,.35)}
   transform-origin:50% 82%;will-change:transform}
 .milestone-sub{font-family:var(--hand);font-size:1.7rem;color:var(--cream-dim);margin-top:.4em}
 
-/* photo wall (masonry) */
-.wall-sec .chapter-title{margin-bottom:6vh}
-.wall{column-count:4;column-gap:14px}
-.wall img{width:100%;margin:0 0 14px;border-radius:12px;break-inside:avoid;
-  background:rgba(255,255,255,.04);box-shadow:0 20px 40px -24px rgba(0,0,0,.7);
-  cursor:zoom-in;transition:filter .35s ease, box-shadow .35s ease}
-.wall img:hover{filter:brightness(1.08) saturate(1.08);box-shadow:0 28px 60px -26px rgba(0,0,0,.82)}
-@media(max-width:980px){.wall{column-count:3}}
-@media(max-width:640px){.wall{column-count:2}}
 
 /* photo placeholders (legacy) */
 .ph{
@@ -573,6 +564,11 @@ section.recap{padding:0}
   background:linear-gradient(180deg, rgba(255,252,240,.9), rgba(238,227,197,.8));box-shadow:0 1px 3px rgba(90,60,20,.22);opacity:.94}
 .recap-photo{aspect-ratio:3/4;background-size:cover;background-position:center;border-radius:3px}
 .recap-note{display:block;margin-top:9px;font-family:var(--hand);font-size:clamp(.95rem,1.3vw,1.2rem);color:#2a3a66;text-align:center}
+.recap-divider{background:none;box-shadow:none;display:flex;align-items:center;justify-content:center;
+  width:clamp(90px,9vw,140px);padding:0;transform:none}
+.recap-divider::before{display:none}
+.recap-divider span{writing-mode:vertical-rl;font-family:var(--hand);font-size:clamp(1.1rem,1.6vw,1.5rem);
+  color:var(--blue-soft);opacity:.75;white-space:nowrap}
 .recap-end{background:
   radial-gradient(130% 100% at 28% 18%, rgba(156,192,255,.15), transparent 55%),
   linear-gradient(155deg,#1a3068,#0d1839 72%)}

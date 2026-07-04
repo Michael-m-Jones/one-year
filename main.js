@@ -17,9 +17,21 @@
   const musicToggle = document.getElementById("music-toggle");
   const progress = document.getElementById("progress");
 
-  // reloads (incl. the finale replay button) must start the film from the top,
-  // not wherever the browser restored the old scroll position
+  // reloads (incl. the finale replay button) must start the film from the top.
+  // scrollRestoration alone isn't enough — the browser's own async restore can
+  // still win a race against it and land back where the reload was triggered
+  // (e.g. the finale, at the bottom), so pin scroll to 0 across the frames
+  // where that restore actually happens.
   try { history.scrollRestoration = "manual"; } catch (e) {}
+  (function lockScrollTop() {
+    const pin = function () { if (scrollY !== 0) window.scrollTo(0, 0); };
+    pin();
+    addEventListener("load", pin);
+    addEventListener("pageshow", pin);
+    requestAnimationFrame(function () { pin(); requestAnimationFrame(pin); });
+    setTimeout(pin, 60);
+    setTimeout(pin, 300);
+  })();
 
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const isSmall = window.matchMedia("(max-width: 760px)").matches;
@@ -193,10 +205,6 @@
           scrollTrigger: { trigger: t.closest("[data-section]"), start: "top bottom", end: "bottom top", scrub: true } });
       });
 
-      // Photo wall erupts upward like the book spilling open.
-      gsap.fromTo(".wall img", { y: 120, rotateZ: function (i) { return (i % 2 ? 7 : -7); }, scale: 0.92 },
-        { y: 0, rotateZ: 0, scale: 1, stagger: 0.035, ease: "power2.out",
-          scrollTrigger: { trigger: ".wall-sec", start: "top 78%", end: "top 24%", scrub: 0.7 } });
     }
 
     /* --- Scroll progress bar --- */
@@ -690,7 +698,6 @@
       [chapters[0], "ch. 01"],
       [document.querySelector(".milestone"), "official"],
       [chapters[1], "ch. 02"],
-      [document.querySelector(".wall-sec"), "all at once"],
       [document.querySelector(".numbers"), "by the numbers"],
       [document.querySelector(".recap"), "rewind"],
       [document.querySelector(".letter"), "for you"],
@@ -811,7 +818,7 @@
     const root = document.documentElement;
     const photoLayers = Array.prototype.slice.call(ambience.querySelectorAll(".ambient-photo"));
     const scenes = Array.prototype.slice.call(document.querySelectorAll(
-      ".hero, .chapter, .milestone, [data-moment], .wall-sec, .numbers, .recap, .letter, .finale"
+      ".hero, .chapter, .milestone, [data-moment], .numbers, .recap, .letter, .finale"
     ));
     scenes.forEach(function (scene, i) { scene.dataset.storyIndex = i; });
     const palettes = [
@@ -954,7 +961,7 @@
       // recap first: its card notes mention nearly every keyword below
       if (scene.classList.contains("recap")) return 8;
       if (scene.classList.contains("finale") || scene.classList.contains("letter")) return 15;
-      if (scene.classList.contains("wall-sec") || scene.classList.contains("numbers")) return 13;
+      if (scene.classList.contains("numbers")) return 13;
       if (scene.classList.contains("milestone") || text.indexOf("official.") !== -1) return 4;
       if (text.indexOf("how it started") !== -1) return 1;
       if (text.indexOf("year of firsts") !== -1) return 5;
@@ -974,7 +981,7 @@
     }
 
     function getScenePhoto(scene) {
-      const img = scene.querySelector(".frame img, .wall img");
+      const img = scene.querySelector(".frame img");
       if (img) return img.currentSrc || img.src || img.getAttribute("src");
       const bgEl = scene.querySelector(".hero-photo, .page-photo");
       if (!bgEl) return "";
@@ -1000,7 +1007,7 @@
     if (!constellationCtx || !journeyCtx) return;
 
     const sceneEls = Array.prototype.slice.call(document.querySelectorAll(
-      ".hero, .chapter, .milestone, [data-moment], .wall-sec, .numbers, .recap, .letter, .finale"
+      ".hero, .chapter, .milestone, [data-moment], .numbers, .recap, .letter, .finale"
     ));
     if (!sceneEls.length) return;
 
@@ -1585,7 +1592,7 @@
       if (el.classList.contains("chapter")) return 0.12;
       if (el.classList.contains("milestone")) return 0.5;
       if (el.classList.contains("letter") || el.classList.contains("finale")) return 0.5;
-      if (el.classList.contains("wall-sec") || el.classList.contains("numbers")) return 0.84;
+      if (el.classList.contains("numbers")) return 0.84;
       if (el.classList.contains("reverse")) return 0.82;
       if (el.matches("[data-moment]")) return 0.18;
       return 0.18 + (i % 4) * 0.18;
@@ -1665,7 +1672,7 @@
     if (!viewer || !viewerImg || !caption || !closeBtn || !backdrop || !shell) return;
 
     let lastFocus = null;
-    const photos = document.querySelectorAll(".frame img, .wall img");
+    const photos = document.querySelectorAll(".frame img");
     photos.forEach(function (img) {
       const label = getPhotoCaption(img);
       img.setAttribute("role", "button");
