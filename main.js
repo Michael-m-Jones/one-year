@@ -1018,10 +1018,16 @@
       return {
         el: el,
         index: i,
+        isMoment: el.matches("[data-moment]"),
+        anchorEl: el.matches("[data-moment]") ? (el.querySelector(".moment-media") || el) : el,
         satellites: createSatellites(i),
         baseSide: getBaseSide(el, i),
         top: 0,
-        height: 1
+        height: 1,
+        anchorTop: 0,
+        anchorLeft: 0,
+        anchorWidth: 1,
+        anchorHeight: 1
       };
     });
     const stars = createStars(isSmall ? 36 : 72);
@@ -1102,10 +1108,19 @@
     }
 
     let lastCanvasFrame = 0;
+    let lastSeenScrollY = scrollY;
+    let scrollingUntil = 0;
     requestAnimationFrame(loop);
 
     function loop(now) {
-      const minFrameMs = document.body.classList.contains("book-intro-playing") ? 180 : (isSmall ? 66 : 40);
+      if (Math.abs(scrollY - lastSeenScrollY) > 0.2) {
+        scrollingUntil = now + 180;
+        lastSeenScrollY = scrollY;
+      }
+      const isScrolling = now < scrollingUntil;
+      const minFrameMs = document.body.classList.contains("book-intro-playing")
+        ? 180
+        : (isScrolling ? (isSmall ? 33 : 16) : (isSmall ? 66 : 40));
       if (!document.hidden && now - lastCanvasFrame >= minFrameMs) {
         lastCanvasFrame = now;
         updateState();
@@ -1137,8 +1152,13 @@
       lastDocHeight = document.documentElement.scrollHeight;
       memories.forEach(function (memory) {
         const rect = memory.el.getBoundingClientRect();
+        const anchorRect = memory.anchorEl.getBoundingClientRect();
         memory.top = rect.top + scrollY;
         memory.height = Math.max(1, rect.height || memory.el.offsetHeight || 1);
+        memory.anchorTop = anchorRect.top + scrollY;
+        memory.anchorLeft = anchorRect.left;
+        memory.anchorWidth = Math.max(1, anchorRect.width || memory.anchorEl.offsetWidth || 1);
+        memory.anchorHeight = Math.max(1, anchorRect.height || memory.anchorEl.offsetHeight || 1);
       });
     }
 
@@ -1175,15 +1195,20 @@
     function getNodes() {
       if (layoutDirty) cacheMemoryLayout();
       return memories.map(function (memory) {
-        const top = memory.top - scrollY;
-        const centerY = top + memory.height * 0.5;
-        const localProgress = clamp((h * 0.78 - top) / Math.max(1, memory.height + h * 0.56), 0, 1);
-        const drift = Math.sin(memory.index * 1.37 + scrollProgress * Math.PI * 2) * (isSmall ? 7 : 24);
-        const x = clamp(w * memory.baseSide + drift, isSmall ? 24 : 58, w - (isSmall ? 24 : 58));
+        const sectionTop = memory.top - scrollY;
+        const anchorTop = (memory.anchorTop || memory.top) - scrollY;
+        const anchorHeight = memory.anchorHeight || memory.height;
+        const centerY = snapHalf(anchorTop + anchorHeight * 0.5);
+        const localProgress = clamp((h * 0.78 - sectionTop) / Math.max(1, memory.height + h * 0.56), 0, 1);
+        const anchoredX = memory.isMoment
+          ? memory.anchorLeft + memory.anchorWidth * (memory.baseSide < 0.5 ? 0.72 : 0.28)
+          : w * memory.baseSide;
+        const x = snapHalf(clamp(anchoredX, isSmall ? 24 : 58, w - (isSmall ? 24 : 58)));
         const visited = memory.index < activeIndex || centerY < h * 0.58;
         return {
           index: memory.index,
           el: memory.el,
+          isMoment: memory.isMoment,
           x: x,
           y: centerY,
           localProgress: localProgress,
@@ -1196,6 +1221,7 @@
 
     function draw(now) {
       const nodes = getNodes();
+      const pathNodes = nodes.filter(function (node) { return node.isMoment; });
       const mood = readMood();
       pointer.strength *= 0.94;
 
@@ -1207,7 +1233,7 @@
       drawMeteors(constellationCtx, now, mood);
       drawMemoryConstellations(constellationCtx, nodes, now, mood);
       drawFinalHeart(constellationCtx, now, mood);
-      drawJourneyPath(journeyCtx, nodes, now, mood);
+      drawJourneyPath(journeyCtx, pathNodes.length > 1 ? pathNodes : nodes, now, mood);
       drawBookWake(journeyCtx, nodes, now, mood);
     }
 
@@ -1235,9 +1261,7 @@
 
     function drawJourneyPath(ctx, nodes, now, mood) {
       const overscan = h * 0.58;
-      const visibleNodes = nodes.filter(function (node) {
-        return node.y > -overscan && node.y < h + overscan;
-      });
+      const visibleNodes = getPathWindow(nodes, overscan);
       if (!visibleNodes.length) return;
 
       ctx.save();
@@ -1265,11 +1289,11 @@
         drawSpline(ctx, liveNodes);
 
         ctx.save();
-        ctx.globalAlpha = isSmall ? 0.32 : 0.48;
+        ctx.globalAlpha = isSmall ? 0.26 : 0.36;
         ctx.lineWidth = isSmall ? 1 : 1.5;
         ctx.strokeStyle = rgba(mood.c, 0.96);
-        ctx.setLineDash([8, 18]);
-        ctx.lineDashOffset = -now * 0.026;
+        ctx.setLineDash([10, 22]);
+        ctx.lineDashOffset = -now * 0.01;
         drawSpline(ctx, liveNodes);
         ctx.restore();
 
@@ -1302,6 +1326,21 @@
       });
 
       ctx.restore();
+    }
+
+    function getPathWindow(nodes, overscan) {
+      let first = -1;
+      let last = -1;
+      for (let i = 0; i < nodes.length; i++) {
+        if (nodes[i].y > -overscan && nodes[i].y < h + overscan) {
+          if (first === -1) first = i;
+          last = i;
+        }
+      }
+      if (first === -1) return [];
+      first = Math.max(0, first - 1);
+      last = Math.min(nodes.length - 1, last + 1);
+      return nodes.slice(first, last + 1);
     }
 
     function drawPathTravelers(ctx, points, now, mood) {
@@ -1691,6 +1730,10 @@
 
     function clamp(value, min, max) {
       return Math.max(min, Math.min(max, value));
+    }
+
+    function snapHalf(value) {
+      return Math.round(value * 2) / 2;
     }
   }
 
