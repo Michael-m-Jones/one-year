@@ -132,7 +132,7 @@
     }
     if (window.gsap) {
       gsap.ticker.add(function (t) { if (lenis) lenis.raf(t * 1000); });
-      gsap.ticker.lagSmoothing(0);
+      gsap.ticker.lagSmoothing(500, 33);
     }
 
     const hasGSAP = window.gsap && window.ScrollTrigger;
@@ -668,7 +668,13 @@
 
     let x = 0;
     let boost = 0;
+    let halfWidth = 0;
     const baseSpeed = isSmall ? 0.45 : 0.7;
+    function measureTrack() {
+      halfWidth = track.scrollWidth / 2;
+    }
+    measureTrack();
+    addEventListener("resize", debounce(measureTrack, 150));
     if (window.ScrollTrigger) {
       ScrollTrigger.create({
         start: 0, end: "max",
@@ -680,10 +686,9 @@
     gsap.ticker.add(function () {
       boost *= 0.94;
       x -= baseSpeed + boost;
-      const half = track.scrollWidth / 2;
-      if (half > 0) {
-        if (x <= -half) x += half;
-        if (x > 0) x -= half;
+      if (halfWidth > 0) {
+        if (x <= -halfWidth) x += halfWidth;
+        if (x > 0) x -= halfWidth;
       }
       gsap.set(track, { x: x });
     });
@@ -743,28 +748,8 @@
   }
 
   /* ---------- 3⅞d. VELOCITY FEEL: photos lean into a fast scroll ---------- */
-  function setupVelocityFeel(hasGSAP) {
-    if (!heavy || !hasGSAP || !window.ScrollTrigger) return;
-    const targets = document.querySelectorAll(".moment-media");
-    if (!targets.length) return;
-    const setters = Array.prototype.map.call(targets, function (el) {
-      return gsap.quickSetter(el, "skewY", "deg");
-    });
-    const clampSkew = gsap.utils.clamp(-4.5, 4.5);
-    const proxy = { skew: 0 };
-    function apply() {
-      for (let i = 0; i < setters.length; i++) setters[i](proxy.skew);
-    }
-    ScrollTrigger.create({
-      start: 0, end: "max",
-      onUpdate: function (self) {
-        const skew = clampSkew(self.getVelocity() / -420);
-        if (Math.abs(skew) > Math.abs(proxy.skew)) {
-          proxy.skew = skew;
-          gsap.to(proxy, { skew: 0, duration: 0.85, ease: "power3.out", overwrite: true, onUpdate: apply });
-        }
-      }
-    });
+  function setupVelocityFeel() {
+    // The scrubbed 3D cards already carry motion; another velocity skew made side photos shimmer on trackpads.
   }
 
   /* ---------- 3A. IMAGE LOADING: keep the scroll story from outrunning photos ---------- */
@@ -808,6 +793,7 @@
     const frame = img.closest(".frame");
     if (frame) frame.classList.add("is-loaded");
     refreshScroll();
+    window.dispatchEvent(new Event("journeylayoutdirty"));
   }
 
   /* ---------- 3B. AMBIENT STORY BACKDROP ---------- */
@@ -861,6 +847,9 @@
     let currentScene = null;
     let layerIndex = 0;
     let currentPhoto = "";
+    let currentWorldIndex = -1;
+    let lastAmbientCheck = 0;
+    let lastRibbonShift = "";
 
     activateNearestScene();
 
@@ -869,17 +858,27 @@
         start: 0,
         end: "max",
         onUpdate: function (self) {
-          root.style.setProperty("--ribbon-shift", ((self.progress - 0.5) * 86).toFixed(2) + "%");
+          const shift = ((self.progress - 0.5) * 86).toFixed(1) + "%";
+          if (shift !== lastRibbonShift) {
+            lastRibbonShift = shift;
+            root.style.setProperty("--ribbon-shift", shift);
+          }
           scheduleAmbientUpdate();
         }
       });
-      window.addEventListener("resize", debounce(activateNearestScene, 120));
+      window.addEventListener("resize", debounce(function () {
+        lastAmbientCheck = 0;
+        activateNearestScene();
+      }, 120));
     } else {
       window.addEventListener("scroll", scheduleAmbientUpdate, { passive: true });
       window.addEventListener("resize", scheduleAmbientUpdate);
     }
 
     function scheduleAmbientUpdate() {
+      const now = performance.now();
+      if (now - lastAmbientCheck < 90) return;
+      lastAmbientCheck = now;
       if (scheduleAmbientUpdate.queued) return;
       scheduleAmbientUpdate.queued = true;
       requestAnimationFrame(function () {
@@ -918,6 +917,8 @@
       const palette = palettes[worldIndex % palettes.length];
       const world = worlds[worldIndex % worlds.length];
       const sceneChanged = currentScene !== scene;
+      if (!sceneChanged && currentWorldIndex === worldIndex) return;
+      currentWorldIndex = worldIndex;
       root.style.setProperty("--mood-deep", palette.deep);
       root.style.setProperty("--mood-a", palette.a);
       root.style.setProperty("--mood-b", palette.b);
@@ -1002,8 +1003,9 @@
     const journeyCanvas = document.getElementById("journey-canvas");
     if (!constellationCanvas || !journeyCanvas) return;
 
-    const constellationCtx = constellationCanvas.getContext("2d");
-    const journeyCtx = journeyCanvas.getContext("2d");
+    const contextOptions = { alpha: true, desynchronized: true };
+    const constellationCtx = constellationCanvas.getContext("2d", contextOptions);
+    const journeyCtx = journeyCanvas.getContext("2d", contextOptions);
     if (!constellationCtx || !journeyCtx) return;
 
     const sceneEls = Array.prototype.slice.call(document.querySelectorAll(
@@ -1017,10 +1019,12 @@
         el: el,
         index: i,
         satellites: createSatellites(i),
-        baseSide: getBaseSide(el, i)
+        baseSide: getBaseSide(el, i),
+        top: 0,
+        height: 1
       };
     });
-    const stars = createStars(isSmall ? 48 : 96);
+    const stars = createStars(isSmall ? 36 : 72);
     const meteors = [];
     const root = document.documentElement;
     const fallbackMood = { a: "111 160 255", b: "255 159 182", c: "255 210 122", deep: "8 14 38" };
@@ -1031,17 +1035,29 @@
     let scrollProgress = 0;
     let activeIndex = 0;
     let lastScenePulse = -1;
+    let layoutDirty = true;
+    let lastDocHeight = 0;
     const pointer = { x: 0, y: 0, strength: 0 };
 
     size();
+    cacheMemoryLayout();
     updateState();
     draw(performance.now());
 
     addEventListener("resize", debounce(function () {
       size();
+      cacheMemoryLayout();
       updateState();
       draw(performance.now());
     }, 120));
+    addEventListener("load", markLayoutDirty);
+    addEventListener("journeylayoutdirty", markLayoutDirty);
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(markLayoutDirty).catch(noop);
+    }
+    if (window.ScrollTrigger && ScrollTrigger.addEventListener) {
+      ScrollTrigger.addEventListener("refresh", markLayoutDirty);
+    }
 
     addEventListener("pointermove", function (e) {
       pointer.x = e.clientX;
@@ -1089,7 +1105,7 @@
     requestAnimationFrame(loop);
 
     function loop(now) {
-      const minFrameMs = document.body.classList.contains("book-intro-playing") ? 160 : (isSmall ? 50 : 33);
+      const minFrameMs = document.body.classList.contains("book-intro-playing") ? 180 : (isSmall ? 66 : 40);
       if (!document.hidden && now - lastCanvasFrame >= minFrameMs) {
         lastCanvasFrame = now;
         updateState();
@@ -1099,7 +1115,7 @@
     }
 
     function size() {
-      dpr = Math.min(isSmall ? 1.2 : 1.45, devicePixelRatio || 1);
+      dpr = Math.min(isSmall ? 1.1 : 1.25, devicePixelRatio || 1);
       w = innerWidth;
       h = innerHeight;
       [constellationCanvas, journeyCanvas].forEach(function (canvas) {
@@ -1112,8 +1128,23 @@
       journeyCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
+    function markLayoutDirty() {
+      layoutDirty = true;
+    }
+
+    function cacheMemoryLayout() {
+      layoutDirty = false;
+      lastDocHeight = document.documentElement.scrollHeight;
+      memories.forEach(function (memory) {
+        const rect = memory.el.getBoundingClientRect();
+        memory.top = rect.top + scrollY;
+        memory.height = Math.max(1, rect.height || memory.el.offsetHeight || 1);
+      });
+    }
+
     function updateState() {
       const doc = document.documentElement;
+      if (layoutDirty || lastDocHeight !== doc.scrollHeight) cacheMemoryLayout();
       const max = Math.max(1, doc.scrollHeight - h);
       scrollProgress = clamp(scrollY / max, 0, 1);
       activeIndex = getActiveIndex();
@@ -1125,10 +1156,11 @@
       let bestScore = -Infinity;
 
       memories.forEach(function (memory) {
-        const rect = memory.el.getBoundingClientRect();
-        const visible = Math.max(0, Math.min(rect.bottom, h) - Math.max(rect.top, 0));
+        const top = memory.top - scrollY;
+        const bottom = top + memory.height;
+        const visible = Math.max(0, Math.min(bottom, h) - Math.max(top, 0));
         if (visible <= 0) return;
-        const center = rect.top + rect.height * 0.5;
+        const center = top + memory.height * 0.5;
         const centerDistance = Math.abs(center - focusY);
         const score = visible - centerDistance * 0.32;
         if (score > bestScore) {
@@ -1141,10 +1173,11 @@
     }
 
     function getNodes() {
+      if (layoutDirty) cacheMemoryLayout();
       return memories.map(function (memory) {
-        const rect = memory.el.getBoundingClientRect();
-        const centerY = rect.top + rect.height * 0.5;
-        const localProgress = clamp((h * 0.78 - rect.top) / Math.max(1, rect.height + h * 0.56), 0, 1);
+        const top = memory.top - scrollY;
+        const centerY = top + memory.height * 0.5;
+        const localProgress = clamp((h * 0.78 - top) / Math.max(1, memory.height + h * 0.56), 0, 1);
         const drift = Math.sin(memory.index * 1.37 + scrollProgress * Math.PI * 2) * (isSmall ? 7 : 24);
         const x = clamp(w * memory.baseSide + drift, isSmall ? 24 : 58, w - (isSmall ? 24 : 58));
         const visited = memory.index < activeIndex || centerY < h * 0.58;
@@ -1631,7 +1664,7 @@
     }
 
     function readMood() {
-      const styles = getComputedStyle(root);
+      const styles = root.style;
       return {
         a: styles.getPropertyValue("--mood-a").trim() || fallbackMood.a,
         b: styles.getPropertyValue("--mood-b").trim() || fallbackMood.b,
