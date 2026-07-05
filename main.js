@@ -39,6 +39,13 @@
   const refreshScroll = debounce(function () {
     if (window.ScrollTrigger) ScrollTrigger.refresh();
   }, 160);
+  const performanceState = {
+    fastScroll: false,
+    fastUntil: 0,
+    qualityRaf: 0,
+    lastY: 0,
+    lastT: 0
+  };
 
   let unlocked = false;
   try { unlocked = sessionStorage.getItem(UKEY) === "1"; } catch (e) {}
@@ -127,8 +134,11 @@
     // Lenis smooth scroll, driven by GSAP ticker (canonical integration)
     let lenis = null;
     if (window.Lenis && !reduceMotion) {
-      lenis = new Lenis({ lerp: 0.13, smoothWheel: true });
-      lenis.on("scroll", function () { if (window.ScrollTrigger) ScrollTrigger.update(); });
+      lenis = new Lenis({ lerp: 0.17, smoothWheel: true });
+      lenis.on("scroll", function (e) {
+        markScrollVelocity(e && e.velocity ? Math.abs(e.velocity) * 18 : 0);
+        if (window.ScrollTrigger) ScrollTrigger.update();
+      });
     }
     if (window.gsap) {
       gsap.ticker.add(function (t) { if (lenis) lenis.raf(t * 1000); });
@@ -138,6 +148,7 @@
     const hasGSAP = window.gsap && window.ScrollTrigger;
     if (hasGSAP) gsap.registerPlugin(ScrollTrigger);
     setupImageLoading();
+    setupScrollQuality(lenis);
     setupPhotoViewer(hasGSAP);
     setupLetter(hasGSAP, lenis);
     setupPhotoTilt();
@@ -223,6 +234,50 @@
     }
 
     initCounters();
+  }
+
+  function setupScrollQuality(lenis) {
+    if (reduceMotion) return;
+    performanceState.lastY = scrollY;
+    performanceState.lastT = performance.now();
+
+    addEventListener("wheel", function (e) {
+      markScrollVelocity(Math.abs(e.deltaY || 0));
+    }, { passive: true });
+
+    addEventListener("touchmove", function () {
+      markScrollVelocity(900);
+    }, { passive: true });
+
+    if (!lenis) {
+      addEventListener("scroll", function () {
+        const now = performance.now();
+        const dt = Math.max(16, now - performanceState.lastT);
+        const dy = Math.abs(scrollY - performanceState.lastY);
+        performanceState.lastY = scrollY;
+        performanceState.lastT = now;
+        markScrollVelocity((dy / dt) * 16.67);
+      }, { passive: true });
+    }
+  }
+
+  function markScrollVelocity(velocity) {
+    if (reduceMotion || document.body.classList.contains("book-intro-playing")) return;
+    if (velocity < 620 && !performanceState.fastScroll) return;
+    if (velocity >= 620) performanceState.fastUntil = performance.now() + 420;
+    if (!performanceState.qualityRaf) {
+      performanceState.qualityRaf = requestAnimationFrame(updateScrollQuality);
+    }
+  }
+
+  function updateScrollQuality() {
+    performanceState.qualityRaf = 0;
+    const isFast = performance.now() < performanceState.fastUntil;
+    if (performanceState.fastScroll !== isFast) {
+      performanceState.fastScroll = isFast;
+      document.body.classList.toggle("scrolling-fast", isFast);
+    }
+    if (isFast) performanceState.qualityRaf = requestAnimationFrame(updateScrollQuality);
   }
 
   /* ---------- 3½. THE OPENING FILM: a real 3D storybook ----------
@@ -777,12 +832,16 @@
     runWhenIdle(function () {
       urls.forEach(function (src, i) {
         const delay = i < 8 ? i * 90 : 1100 + i * 120;
-        setTimeout(function () {
+        setTimeout(function warmImage() {
+          if (performanceState.fastScroll) {
+            setTimeout(warmImage, 520);
+            return;
+          }
           const preloader = new Image();
           preloader.decoding = "async";
           preloader.onload = refreshScroll;
           preloader.src = src;
-          if (i < 8 && preloader.decode) preloader.decode().then(refreshScroll).catch(noop);
+          if (preloader.decode) preloader.decode().then(refreshScroll).catch(noop);
         }, delay);
       });
     });
@@ -877,7 +936,8 @@
 
     function scheduleAmbientUpdate() {
       const now = performance.now();
-      if (now - lastAmbientCheck < 90) return;
+      const throttle = performanceState.fastScroll ? 180 : 90;
+      if (now - lastAmbientCheck < throttle) return;
       lastAmbientCheck = now;
       if (scheduleAmbientUpdate.queued) return;
       scheduleAmbientUpdate.queued = true;
@@ -1030,6 +1090,20 @@
         anchorHeight: 1
       };
     });
+    const nodeCache = memories.map(function (memory) {
+      return {
+        index: memory.index,
+        el: memory.el,
+        isMoment: memory.isMoment,
+        x: 0,
+        y: 0,
+        localProgress: 0,
+        visited: false,
+        active: false,
+        satellites: memory.satellites
+      };
+    });
+    const pathNodeCache = [];
     const stars = createStars(isSmall ? 36 : 72);
     const meteors = [];
     const root = document.documentElement;
@@ -1077,14 +1151,14 @@
         if (lastScenePulse !== activeIndex) {
           lastScenePulse = activeIndex;
           const node = getNodes().filter(function (n) { return n.index === activeIndex; })[0];
-          if (node && node.y > -60 && node.y < h + 60) {
+          if (!performanceState.fastScroll && node && node.y > -60 && node.y < h + 60) {
             window.dispatchEvent(new CustomEvent("loveburst", {
               detail: { x: node.x, y: node.y, count: 10, spread: 54 }
             }));
           }
           // a shooting star marks the big beats of the journey
           const scene = e.detail.scene;
-          if (!reduceMotion && scene && scene.classList &&
+          if (!performanceState.fastScroll && !reduceMotion && scene && scene.classList &&
               (scene.classList.contains("chapter") || scene.classList.contains("milestone") || scene.classList.contains("finale"))) {
             meteors.push({
               x: w * (0.1 + Math.random() * 0.28),
@@ -1121,6 +1195,8 @@
       const finaleZone = scrollProgress > 0.78;
       const minFrameMs = document.body.classList.contains("book-intro-playing")
         ? 180
+        : performanceState.fastScroll
+          ? (isSmall ? 66 : 34)
         : finaleZone
           ? (isScrolling ? (isSmall ? 56 : 34) : (isSmall ? 82 : 50))
           : (isScrolling ? (isSmall ? 33 : 16) : (isSmall ? 66 : 40));
@@ -1197,7 +1273,9 @@
 
     function getNodes() {
       if (layoutDirty) cacheMemoryLayout();
-      return memories.map(function (memory) {
+      for (let i = 0; i < memories.length; i++) {
+        const memory = memories[i];
+        const node = nodeCache[i];
         const sectionTop = memory.top - scrollY;
         const anchorTop = (memory.anchorTop || memory.top) - scrollY;
         const anchorHeight = memory.anchorHeight || memory.height;
@@ -1207,37 +1285,37 @@
           ? memory.anchorLeft + memory.anchorWidth * (memory.baseSide < 0.5 ? 0.72 : 0.28)
           : w * memory.baseSide;
         const x = snapHalf(clamp(anchoredX, isSmall ? 24 : 58, w - (isSmall ? 24 : 58)));
-        const visited = memory.index < activeIndex || centerY < h * 0.58;
-        return {
-          index: memory.index,
-          el: memory.el,
-          isMoment: memory.isMoment,
-          x: x,
-          y: centerY,
-          localProgress: localProgress,
-          visited: visited,
-          active: memory.index === activeIndex,
-          satellites: memory.satellites
-        };
-      });
+        node.x = x;
+        node.y = centerY;
+        node.localProgress = localProgress;
+        node.visited = memory.index < activeIndex || centerY < h * 0.58;
+        node.active = memory.index === activeIndex;
+      }
+      return nodeCache;
     }
 
     function draw(now) {
       const nodes = getNodes();
-      const pathNodes = nodes.filter(function (node) { return node.isMoment; });
+      pathNodeCache.length = 0;
+      for (let i = 0; i < nodes.length; i++) {
+        if (nodes[i].isMoment) pathNodeCache.push(nodes[i]);
+      }
       const mood = readMood();
+      const fastScroll = performanceState.fastScroll;
       pointer.strength *= 0.94;
 
       constellationCtx.clearRect(0, 0, w, h);
       journeyCtx.clearRect(0, 0, w, h);
 
-      drawWorldCurtains(constellationCtx, now, mood);
-      drawStarWorld(constellationCtx, now, mood);
-      drawMeteors(constellationCtx, now, mood);
-      drawMemoryConstellations(constellationCtx, nodes, now, mood);
-      drawFinalHeart(constellationCtx, now, mood);
-      drawJourneyPath(journeyCtx, pathNodes.length > 1 ? pathNodes : nodes, now, mood);
-      drawBookWake(journeyCtx, nodes, now, mood);
+      if (!fastScroll) {
+        drawWorldCurtains(constellationCtx, now, mood);
+        drawStarWorld(constellationCtx, now, mood);
+        drawMeteors(constellationCtx, now, mood);
+      }
+      drawMemoryConstellations(constellationCtx, nodes, now, mood, fastScroll);
+      if (!fastScroll || scrollProgress > 0.78) drawFinalHeart(constellationCtx, now, mood);
+      drawJourneyPath(journeyCtx, pathNodeCache.length > 1 ? pathNodeCache : nodes, now, mood, fastScroll);
+      if (!fastScroll) drawBookWake(journeyCtx, nodes, now, mood);
     }
 
     function drawWorldCurtains(ctx, now, mood) {
@@ -1262,7 +1340,7 @@
       ctx.restore();
     }
 
-    function drawJourneyPath(ctx, nodes, now, mood) {
+    function drawJourneyPath(ctx, nodes, now, mood, fastScroll) {
       const overscan = h * 0.58;
       const visibleNodes = getPathWindow(nodes, overscan);
       if (!visibleNodes.length) return;
@@ -1271,9 +1349,9 @@
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
       ctx.shadowColor = rgba(mood.a, 0.42);
-      ctx.shadowBlur = 18;
+      ctx.shadowBlur = fastScroll ? 0 : 18;
 
-      if (visibleNodes.length > 1) {
+      if (visibleNodes.length > 1 && !fastScroll) {
         ctx.globalAlpha = 0.22;
         ctx.lineWidth = isSmall ? 1.4 : 2;
         ctx.strokeStyle = rgba(mood.c, 0.58);
@@ -1291,20 +1369,22 @@
         ctx.strokeStyle = grad;
         drawSpline(ctx, liveNodes);
 
-        ctx.save();
-        ctx.globalAlpha = isSmall ? 0.26 : 0.36;
-        ctx.lineWidth = isSmall ? 1 : 1.5;
-        ctx.strokeStyle = rgba(mood.c, 0.96);
-        ctx.setLineDash([10, 22]);
-        ctx.lineDashOffset = -now * 0.01;
-        drawSpline(ctx, liveNodes);
-        ctx.restore();
+        if (!fastScroll) {
+          ctx.save();
+          ctx.globalAlpha = isSmall ? 0.26 : 0.36;
+          ctx.lineWidth = isSmall ? 1 : 1.5;
+          ctx.strokeStyle = rgba(mood.c, 0.96);
+          ctx.setLineDash([10, 22]);
+          ctx.lineDashOffset = -now * 0.01;
+          drawSpline(ctx, liveNodes);
+          ctx.restore();
 
-        drawPathTravelers(ctx, liveNodes, now, mood);
+          drawPathTravelers(ctx, liveNodes, now, mood);
+        }
       }
 
       visibleNodes.forEach(function (node) {
-        const pulse = node.active ? 0.5 + 0.5 * Math.sin(now * 0.0052) : 0;
+        const pulse = !fastScroll && node.active ? 0.5 + 0.5 * Math.sin(now * 0.0052) : 0;
         const alpha = node.active ? 1 : (node.visited ? 0.72 : 0.26);
         const radius = (node.active ? 6.6 + pulse * 4.1 : node.visited ? 4 : 2.4) * (isSmall ? 0.72 : 1);
 
@@ -1312,12 +1392,12 @@
         ctx.globalAlpha = alpha;
         ctx.fillStyle = node.active ? rgba(mood.c, 0.96) : rgba(mood.a, 0.86);
         ctx.shadowColor = node.active ? rgba(mood.c, 0.9) : rgba(mood.a, 0.46);
-        ctx.shadowBlur = node.active ? 22 : 12;
+        ctx.shadowBlur = fastScroll ? 0 : (node.active ? 22 : 12);
         ctx.beginPath();
         ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
         ctx.fill();
 
-        if (node.active) {
+        if (node.active && !fastScroll) {
           ctx.globalAlpha = 0.38 + pulse * 0.28;
           ctx.lineWidth = 1.6;
           ctx.strokeStyle = rgba(mood.b, 0.88);
@@ -1462,18 +1542,21 @@
       return { x: last.x, y: last.y };
     }
 
-    function drawMemoryConstellations(ctx, nodes, now, mood) {
+    function drawMemoryConstellations(ctx, nodes, now, mood, fastScroll) {
       const overscan = h * 0.32;
       nodes.forEach(function (node) {
         if (node.y < -overscan || node.y > h + overscan) return;
+        if (fastScroll && !node.active) return;
         const activeBoost = node.active ? 1 : 0;
         const baseAlpha = node.active ? 0.92 : (node.visited ? 0.38 : 0.16);
         const orbit = 1 + Math.sin(now * 0.0015 + node.index) * 0.07;
         const plotted = [];
+        const step = fastScroll ? 2 : 1;
 
         ctx.save();
         ctx.lineCap = "round";
-        node.satellites.forEach(function (sat, i) {
+        for (let i = 0; i < node.satellites.length; i += step) {
+          const sat = node.satellites[i];
           const sway = Math.sin(now * 0.0011 + sat.phase + scrollProgress * 4.2) * 0.16;
           const distance = sat.distance * orbit * (1 + activeBoost * 0.2);
           const sx = node.x + Math.cos(sat.angle + sway) * distance;
@@ -1481,16 +1564,18 @@
           const twinkle = 0.58 + 0.42 * Math.sin(now * sat.speed + sat.phase);
           plotted.push({ x: sx, y: sy, size: sat.size, twinkle: twinkle });
 
-          ctx.globalAlpha = baseAlpha * (0.42 + twinkle * 0.58);
-          ctx.strokeStyle = i % 2 ? rgba(mood.a, 0.72) : rgba(mood.b, 0.66);
-          ctx.lineWidth = node.active ? 1.15 : 0.68;
-          ctx.beginPath();
-          ctx.moveTo(node.x, node.y);
-          ctx.lineTo(sx, sy);
-          ctx.stroke();
-        });
+          if (!fastScroll) {
+            ctx.globalAlpha = baseAlpha * (0.42 + twinkle * 0.58);
+            ctx.strokeStyle = i % 2 ? rgba(mood.a, 0.72) : rgba(mood.b, 0.66);
+            ctx.lineWidth = node.active ? 1.15 : 0.68;
+            ctx.beginPath();
+            ctx.moveTo(node.x, node.y);
+            ctx.lineTo(sx, sy);
+            ctx.stroke();
+          }
+        }
 
-        if (node.active || node.visited) {
+        if ((node.active || node.visited) && !fastScroll) {
           plotted.forEach(function (point, i) {
             if (i % 2 !== 0) return;
             const next = plotted[(i + 2) % plotted.length];
@@ -1512,9 +1597,9 @@
           ctx.globalAlpha = baseAlpha * (0.72 + point.twinkle * 0.34);
           ctx.fillStyle = i % 3 ? rgba(mood.c, 0.92) : rgba(mood.a, 0.88);
           ctx.shadowColor = ctx.fillStyle;
-          ctx.shadowBlur = node.active ? 20 : 8;
+          ctx.shadowBlur = fastScroll ? 0 : (node.active ? 20 : 8);
           ctx.beginPath();
-          ctx.arc(point.x, point.y, point.size * (node.active ? 1.35 : 1.05), 0, Math.PI * 2);
+          ctx.arc(point.x, point.y, point.size * (node.active ? (fastScroll ? 1.05 : 1.35) : 1.05), 0, Math.PI * 2);
           ctx.fill();
         });
         ctx.restore();
