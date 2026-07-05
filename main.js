@@ -44,8 +44,10 @@
     fastUntil: 0,
     qualityRaf: 0,
     lastY: 0,
-    lastT: 0
+    lastT: 0,
+    movingUntil: 0
   };
+  const FAST_SCROLL_ENTER = 1250;
 
   let unlocked = false;
   try { unlocked = sessionStorage.getItem(UKEY) === "1"; } catch (e) {}
@@ -134,9 +136,9 @@
     // Lenis smooth scroll, driven by GSAP ticker (canonical integration)
     let lenis = null;
     if (window.Lenis && !reduceMotion) {
-      lenis = new Lenis({ lerp: 0.17, smoothWheel: true });
+      lenis = new Lenis({ lerp: 0.15, smoothWheel: true });
       lenis.on("scroll", function (e) {
-        markScrollVelocity(e && e.velocity ? Math.abs(e.velocity) * 18 : 0);
+        markScrollVelocity(e && e.velocity ? Math.abs(e.velocity) * 3 : 0);
         if (window.ScrollTrigger) ScrollTrigger.update();
       });
     }
@@ -246,7 +248,7 @@
     }, { passive: true });
 
     addEventListener("touchmove", function () {
-      markScrollVelocity(900);
+      markScrollVelocity(FAST_SCROLL_ENTER + 120);
     }, { passive: true });
 
     if (!lenis) {
@@ -263,8 +265,10 @@
 
   function markScrollVelocity(velocity) {
     if (reduceMotion || document.body.classList.contains("book-intro-playing")) return;
-    if (velocity < 620 && !performanceState.fastScroll) return;
-    if (velocity >= 620) performanceState.fastUntil = performance.now() + 420;
+    const now = performance.now();
+    if (velocity > 4) performanceState.movingUntil = now + 320;
+    if (velocity < FAST_SCROLL_ENTER && !performanceState.fastScroll) return;
+    if (velocity >= FAST_SCROLL_ENTER) performanceState.fastUntil = now + 420;
     if (!performanceState.qualityRaf) {
       performanceState.qualityRaf = requestAnimationFrame(updateScrollQuality);
     }
@@ -833,7 +837,7 @@
       urls.forEach(function (src, i) {
         const delay = i < 8 ? i * 90 : 1100 + i * 120;
         setTimeout(function warmImage() {
-          if (performanceState.fastScroll) {
+          if (performanceState.fastScroll || performance.now() < performanceState.movingUntil) {
             setTimeout(warmImage, 520);
             return;
           }
@@ -851,8 +855,17 @@
     img.classList.add("is-loaded");
     const frame = img.closest(".frame");
     if (frame) frame.classList.add("is-loaded");
-    refreshScroll();
-    window.dispatchEvent(new Event("journeylayoutdirty"));
+    scheduleImageLayoutRefresh();
+  }
+
+  function scheduleImageLayoutRefresh() {
+    clearTimeout(scheduleImageLayoutRefresh.timer);
+    const now = performance.now();
+    const delay = now < performanceState.movingUntil ? (performanceState.movingUntil - now + 80) : 0;
+    scheduleImageLayoutRefresh.timer = setTimeout(function () {
+      refreshScroll();
+      window.dispatchEvent(new Event("journeylayoutdirty"));
+    }, delay);
   }
 
   /* ---------- 3B. AMBIENT STORY BACKDROP ---------- */
@@ -1104,6 +1117,8 @@
       };
     });
     const pathNodeCache = [];
+    const visiblePathCache = [];
+    const livePathCache = [];
     const stars = createStars(isSmall ? 36 : 72);
     const meteors = [];
     const root = document.documentElement;
@@ -1253,6 +1268,7 @@
       const focusY = h * 0.52;
       let best = activeIndex;
       let bestScore = -Infinity;
+      let currentScore = -Infinity;
 
       memories.forEach(function (memory) {
         const top = memory.top - scrollY;
@@ -1262,12 +1278,18 @@
         const center = top + memory.height * 0.5;
         const centerDistance = Math.abs(center - focusY);
         const score = visible - centerDistance * 0.32;
+        if (memory.index === activeIndex) currentScore = score;
         if (score > bestScore) {
           best = memory.index;
           bestScore = score;
         }
       });
 
+      if (bestScore === -Infinity) return activeIndex;
+      if (best !== activeIndex && currentScore > -Infinity) {
+        const hysteresis = isSmall ? 24 : 42;
+        if (bestScore < currentScore + hysteresis) return activeIndex;
+      }
       return best;
     }
 
@@ -1279,12 +1301,12 @@
         const sectionTop = memory.top - scrollY;
         const anchorTop = (memory.anchorTop || memory.top) - scrollY;
         const anchorHeight = memory.anchorHeight || memory.height;
-        const centerY = snapHalf(anchorTop + anchorHeight * 0.5);
+        const centerY = anchorTop + anchorHeight * 0.5;
         const localProgress = clamp((h * 0.78 - sectionTop) / Math.max(1, memory.height + h * 0.56), 0, 1);
         const anchoredX = memory.isMoment
           ? memory.anchorLeft + memory.anchorWidth * (memory.baseSide < 0.5 ? 0.72 : 0.28)
           : w * memory.baseSide;
-        const x = snapHalf(clamp(anchoredX, isSmall ? 24 : 58, w - (isSmall ? 24 : 58)));
+        const x = clamp(anchoredX, isSmall ? 24 : 58, w - (isSmall ? 24 : 58));
         node.x = x;
         node.y = centerY;
         node.localProgress = localProgress;
@@ -1342,7 +1364,7 @@
 
     function drawJourneyPath(ctx, nodes, now, mood, fastScroll) {
       const overscan = h * 0.58;
-      const visibleNodes = getPathWindow(nodes, overscan);
+      const visibleNodes = getPathWindow(nodes, overscan, visiblePathCache);
       if (!visibleNodes.length) return;
 
       ctx.save();
@@ -1358,7 +1380,11 @@
         drawSpline(ctx, visibleNodes);
       }
 
-      const liveNodes = visibleNodes.filter(function (node) { return node.index <= activeIndex + 1; });
+      livePathCache.length = 0;
+      for (let i = 0; i < visibleNodes.length; i++) {
+        if (visibleNodes[i].index <= activeIndex + 1) livePathCache.push(visibleNodes[i]);
+      }
+      const liveNodes = livePathCache;
       if (liveNodes.length > 1) {
         const grad = ctx.createLinearGradient(0, 0, w, h);
         grad.addColorStop(0, rgba(mood.a, 0.94));
@@ -1375,7 +1401,7 @@
           ctx.lineWidth = isSmall ? 1 : 1.5;
           ctx.strokeStyle = rgba(mood.c, 0.96);
           ctx.setLineDash([10, 22]);
-          ctx.lineDashOffset = -now * 0.01;
+          ctx.lineDashOffset = -scrollProgress * 260;
           drawSpline(ctx, liveNodes);
           ctx.restore();
 
@@ -1411,7 +1437,8 @@
       ctx.restore();
     }
 
-    function getPathWindow(nodes, overscan) {
+    function getPathWindow(nodes, overscan, out) {
+      out.length = 0;
       let first = -1;
       let last = -1;
       for (let i = 0; i < nodes.length; i++) {
@@ -1420,20 +1447,27 @@
           last = i;
         }
       }
-      if (first === -1) return [];
+      if (first === -1) return out;
       first = Math.max(0, first - 1);
       last = Math.min(nodes.length - 1, last + 1);
-      return nodes.slice(first, last + 1);
+      for (let i = first; i <= last; i++) out.push(nodes[i]);
+      return out;
     }
 
     function drawPathTravelers(ctx, points, now, mood) {
       if (points.length < 2) return;
       const travelers = isSmall ? 1 : 3;
+      if (!drawPathTravelers._heads) {
+        drawPathTravelers._heads = [{ x: 0, y: 0 }, { x: 0, y: 0 }, { x: 0, y: 0 }];
+        drawPathTravelers._tails = [{ x: 0, y: 0 }, { x: 0, y: 0 }, { x: 0, y: 0 }];
+      }
+      const heads = drawPathTravelers._heads;
+      const tails = drawPathTravelers._tails;
       for (let i = 0; i < travelers; i++) {
-        const t = (now * 0.00012 + i / travelers + scrollProgress * 0.3) % 1;
-        const point = pointAlongPath(points, t);
+        const t = (scrollProgress * 0.74 + now * 0.000025 + i / travelers) % 1;
+        const point = pointAlongPath(points, t, heads[i]);
         if (!point || point.y < -40 || point.y > h + 40) continue;
-        const tail = pointAlongPath(points, Math.max(0, t - 0.035));
+        const tail = pointAlongPath(points, Math.max(0, t - 0.028), tails[i]);
         ctx.save();
         ctx.globalAlpha = isSmall ? 0.62 : 0.82;
         ctx.strokeStyle = rgba(mood.c, 0.8);
@@ -1512,34 +1546,41 @@
       ctx.restore();
     }
 
-    function pointAlongPath(points, t) {
+    function pointAlongPath(points, t, out) {
       if (!points.length) return null;
-      if (points.length === 1) return { x: points[0].x, y: points[0].y };
+      out = out || { x: 0, y: 0 };
+      if (points.length === 1) {
+        out.x = points[0].x;
+        out.y = points[0].y;
+        return out;
+      }
 
       let total = 0;
-      const lengths = [];
       for (let i = 1; i < points.length; i++) {
-        const len = distance(points[i - 1].x, points[i - 1].y, points[i].x, points[i].y);
-        lengths.push(len);
-        total += len;
+        total += distance(points[i - 1].x, points[i - 1].y, points[i].x, points[i].y);
       }
-      if (!total) return { x: points[0].x, y: points[0].y };
+      if (!total) {
+        out.x = points[0].x;
+        out.y = points[0].y;
+        return out;
+      }
 
       let walked = 0;
       const target = total * clamp(t, 0, 1);
       for (let i = 1; i < points.length; i++) {
-        const len = lengths[i - 1];
+        const len = distance(points[i - 1].x, points[i - 1].y, points[i].x, points[i].y);
         if (walked + len >= target) {
           const local = (target - walked) / len;
-          return {
-            x: points[i - 1].x + (points[i].x - points[i - 1].x) * local,
-            y: points[i - 1].y + (points[i].y - points[i - 1].y) * local
-          };
+          out.x = points[i - 1].x + (points[i].x - points[i - 1].x) * local;
+          out.y = points[i - 1].y + (points[i].y - points[i - 1].y) * local;
+          return out;
         }
         walked += len;
       }
       const last = points[points.length - 1];
-      return { x: last.x, y: last.y };
+      out.x = last.x;
+      out.y = last.y;
+      return out;
     }
 
     function drawMemoryConstellations(ctx, nodes, now, mood, fastScroll) {
@@ -1584,7 +1625,7 @@
             ctx.strokeStyle = i % 4 ? rgba(mood.c, 0.7) : rgba(mood.b, 0.64);
             ctx.lineWidth = node.active ? 0.9 : 0.55;
             ctx.setLineDash(node.active ? [4, 10] : []);
-            ctx.lineDashOffset = -now * 0.018;
+            ctx.lineDashOffset = -scrollProgress * 180 - node.index * 2;
             ctx.beginPath();
             ctx.moveTo(point.x, point.y);
             ctx.lineTo(next.x, next.y);
@@ -2058,9 +2099,6 @@
       return 1 - Math.pow(1 - t, 3);
     }
 
-    function snapHalf(value) {
-      return Math.round(value * 2) / 2;
-    }
   }
 
   /* ---------- 3C. PHOTO PORTALS — step inside the memory ----------
