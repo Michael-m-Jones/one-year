@@ -18,7 +18,7 @@
 <link rel="preload" as="image" href="09-disney.jpg" fetchpriority="low" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='14'%20fill='%230a1230'/%3E%3Cpath%20d='M32%2052%2012%2032a12%2012%200%200%201%2017-17l3%203%203-3a12%2012%200%200%201%2017%2017z'%20fill='%239cc0ff'/%3E%3C/svg%3E" />
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@300;400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="style.css?v=20260704-5" />
+<link rel="stylesheet" href="style.css?v=20260705-1" />
 </head>
 <body>
 
@@ -71,12 +71,31 @@
 </button>
 
 <div id="photo-viewer" class="photo-viewer" aria-hidden="true">
+  <div class="portal-world" aria-hidden="true">
+    <div class="portal-sky sky-a"></div>
+    <div class="portal-sky sky-b"></div>
+    <div class="portal-dust"></div>
+    <div class="portal-vignette"></div>
+  </div>
   <button class="photo-viewer-backdrop" type="button" aria-label="close photo"></button>
+  <button id="photo-prev" class="portal-nav portal-prev" type="button" aria-label="previous memory">&#8249;</button>
+  <button id="photo-next" class="portal-nav portal-next" type="button" aria-label="next memory">&#8250;</button>
   <div class="photo-viewer-shell" role="dialog" aria-modal="true" aria-label="photo memory">
     <button id="photo-close" class="photo-close" type="button" aria-label="close photo">&times;</button>
-    <img id="photo-viewer-img" alt="" />
-    <p id="photo-viewer-caption"></p>
+    <div class="portal-tilt">
+      <figure class="portal-print">
+        <span class="portal-print-media">
+          <img id="photo-viewer-img" alt="" draggable="false" />
+          <span class="portal-gloss" aria-hidden="true"></span>
+        </span>
+        <figcaption class="portal-ink">
+          <span id="photo-viewer-caption" class="portal-ink-title"></span>
+          <span id="photo-viewer-date" class="portal-ink-date"></span>
+        </figcaption>
+      </figure>
+    </div>
   </div>
+  <p class="portal-count" aria-hidden="true"><span id="portal-index">1</span>&nbsp;/&nbsp;<span id="portal-total">–</span></p>
 </div>
 
 <!-- ============ MAIN EXPERIENCE ============ -->
@@ -535,6 +554,6 @@
 <script src="vendor/gsap.min.js"></script>
 <script src="vendor/ScrollTrigger.min.js"></script>
 <script src="vendor/lenis.min.js"></script>
-<script src="main.js?v=20260704-5"></script>
+<script src="main.js?v=20260705-1"></script>
 </body>
 </html>

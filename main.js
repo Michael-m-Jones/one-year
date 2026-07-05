@@ -607,9 +607,9 @@
           rainId = setInterval(function () {
             window.dispatchEvent(new CustomEvent("loveburst", {
               detail: { x: innerWidth * (0.2 + Math.random() * 0.6),
-                y: innerHeight * (0.18 + Math.random() * 0.35), count: 7, spread: 70 }
+                y: innerHeight * (0.18 + Math.random() * 0.35), count: 4, spread: 58 }
             }));
-          }, 1400);
+          }, 2200);
         } else if (!isFinale && rainId !== null) {
           clearInterval(rainId);
           rainId = null;
@@ -1118,9 +1118,12 @@
         lastSeenScrollY = scrollY;
       }
       const isScrolling = now < scrollingUntil;
+      const finaleZone = scrollProgress > 0.78;
       const minFrameMs = document.body.classList.contains("book-intro-playing")
         ? 180
-        : (isScrolling ? (isSmall ? 33 : 16) : (isSmall ? 66 : 40));
+        : finaleZone
+          ? (isScrolling ? (isSmall ? 56 : 34) : (isSmall ? 82 : 50))
+          : (isScrolling ? (isSmall ? 33 : 16) : (isSmall ? 66 : 40));
       if (!document.hidden && now - lastCanvasFrame >= minFrameMs) {
         lastCanvasFrame = now;
         updateState();
@@ -1592,106 +1595,281 @@
       ctx.restore();
     }
 
-    function drawFinalHeart(ctx, now, mood) {
-      const reveal = clamp((scrollProgress - 0.8) / 0.16, 0, 1);
-      if (reveal <= 0) return;
+    /* ---------- FINALE: the sky writes our signature ----------
+       Keep this cached and intentionally light. The finale shares the frame with
+       Lenis, GSAP, image compositing, and cursor particles, so per-frame random
+       sparkle systems here quickly become visible scroll lag. */
+    function finalHeartState() {
+      if (!drawFinalHeart._state) {
+        drawFinalHeart._state = {
+          signature: "",
+          points: [],
+          visible: [],
+          outline: [],
+          burstFired: false,
+          labelFont: "",
+          labelWidth: 0
+        };
+      }
+      return drawFinalHeart._state;
+    }
 
-      const gather = easeInOutCubic(reveal);
-      const labelReveal = clamp((reveal - 0.46) / 0.38, 0, 1);
-      const cx = w * (isSmall ? 0.5 : 0.72);
-      const cy = h * (isSmall ? 0.48 : 0.49);
-      const unit = Math.min(w, h) * (isSmall ? 0.009 : 0.011);
-      const count = isSmall ? 32 : 46;
-      const points = [];
+    function heartXY(t) {
+      return {
+        x: 16 * Math.pow(Math.sin(t), 3),
+        y: -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t))
+      };
+    }
 
-      for (let i = 0; i < count; i++) {
-        const t = (Math.PI * 2 * i) / count;
-        const hx = 16 * Math.pow(Math.sin(t), 3);
-        const hy = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
-        const targetX = cx + hx * unit;
-        const targetY = cy + hy * unit;
-        const startX = w * (0.12 + rand(i * 47 + 9) * 0.76);
-        const startY = h * (0.1 + rand(i * 53 + 4) * 0.8);
-        const breathing = Math.sin(now * 0.0017 + i * 0.73) * (1 - gather) * 14;
-        points.push({
-          x: lerp(startX, targetX, gather) + breathing,
-          y: lerp(startY, targetY, gather) - breathing * 0.36,
-          tx: targetX,
-          ty: targetY,
-          phase: i * 0.41
+    function rebuildFinalHeart(state, cx, cy, unit, pointCount) {
+      const signature = [
+        Math.round(w), Math.round(h), Math.round(cx), Math.round(cy),
+        Math.round(unit * 100), pointCount, isSmall ? "s" : "d"
+      ].join(":");
+      if (state.signature === signature) return;
+
+      state.signature = signature;
+      state.points = [];
+      state.visible = [];
+      state.outline = [];
+      state.labelFont = "";
+      state.labelWidth = 0;
+
+      for (let i = 0; i < pointCount; i++) {
+        const t = -Math.PI + (Math.PI * 2 * (i + 0.5)) / pointCount;
+        const p = heartXY(t);
+        const spread = Math.min(w, h) * (isSmall ? 0.24 : 0.32);
+        const startAngle = t + (rand(i * 41 + 9) - 0.5) * 1.8;
+        const startRadius = spread * (0.62 + rand(i * 53 + 4) * 0.78);
+        state.points.push({
+          hx: p.x,
+          hy: p.y,
+          sx: cx + Math.cos(startAngle) * startRadius,
+          sy: cy + Math.sin(startAngle) * startRadius,
+          delay: rand(i * 29 + 13) * 0.24,
+          phase: rand(i * 61 + 3) * Math.PI * 2,
+          warm: i % 3 !== 0
         });
+        state.visible.push({ x: 0, y: 0, local: 0, warm: true, phase: 0 });
+      }
+
+      const outlineCount = isSmall ? 52 : 68;
+      for (let i = 0; i <= outlineCount; i++) {
+        const p = heartXY(-Math.PI + (Math.PI * 2 * i) / outlineCount);
+        state.outline.push({ hx: p.x, hy: p.y });
+      }
+    }
+
+    function drawFinalHeart(ctx, now, mood) {
+      const state = finalHeartState();
+      const reveal = clamp((scrollProgress - 0.8) / 0.16, 0, 1);
+      if (reveal <= 0) {
+        state.burstFired = false;
+        return;
+      }
+      if (reveal < 0.2) state.burstFired = false;
+
+      const cx = w * (isSmall ? 0.5 : 0.72);
+      const cy = h * (isSmall ? 0.46 : 0.47);
+      const unit = Math.min(w, h) * (isSmall ? 0.0102 : 0.0122);
+      rebuildFinalHeart(state, cx, cy, unit, isSmall ? 26 : 34);
+
+      const gatherT = reduceMotion ? 1 : easeInOutCubic(clamp(reveal / 0.52, 0, 1));
+      const drawT = reduceMotion ? 1 : easeInOutCubic(clamp((reveal - 0.24) / 0.46, 0, 1));
+      const inkT = easeOutCubic(clamp((reveal - (reduceMotion ? 0.18 : 0.56)) / 0.28, 0, 1));
+      const dateT = easeOutCubic(clamp((reveal - (reduceMotion ? 0.3 : 0.72)) / 0.22, 0, 1));
+      const aliveT = reduceMotion ? 0 : clamp((reveal - 0.86) / 0.14, 0, 1);
+
+      let beat = 1;
+      let beatGlow = 0;
+      if (aliveT > 0) {
+        const cycle = (now % 1900) / 1900;
+        const lub = Math.exp(-Math.pow((cycle - 0.11) / 0.05, 2));
+        const dub = 0.55 * Math.exp(-Math.pow((cycle - 0.29) / 0.055, 2));
+        const pulse = (lub + dub) * aliveT;
+        beat = 1 + pulse * 0.05;
+        beatGlow = pulse;
+      }
+
+      const visiblePoints = state.visible;
+      for (let i = 0; i < state.points.length; i++) {
+        const point = state.points[i];
+        const visible = visiblePoints[i];
+        const local = reduceMotion ? 1 : easeInOutCubic(clamp((gatherT - point.delay) / (1 - point.delay), 0, 1));
+        const tx = cx + point.hx * unit * beat;
+        const ty = cy + point.hy * unit * beat;
+        const drift = (1 - local) * (isSmall ? 4 : 8);
+        visible.x = lerp(point.sx, tx, local) + Math.sin(now * 0.0015 + point.phase) * drift;
+        visible.y = lerp(point.sy, ty, local) + Math.cos(now * 0.0013 + point.phase) * drift;
+        visible.local = local;
+        visible.warm = point.warm;
+        visible.phase = point.phase;
       }
 
       ctx.save();
       ctx.globalCompositeOperation = "screen";
-      ctx.globalAlpha = 0.32 * reveal;
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
-      ctx.strokeStyle = rgba(mood.a, 0.78);
-      ctx.shadowColor = rgba(mood.a, 0.82);
-      ctx.shadowBlur = 20;
-      ctx.lineWidth = isSmall ? 1 : 1.25;
-      ctx.beginPath();
-      points.forEach(function (point, i) {
-        if (i === 0) ctx.moveTo(point.x, point.y);
-        else ctx.lineTo(point.x, point.y);
-      });
-      ctx.closePath();
-      ctx.stroke();
 
-      if (reveal > 0.25) {
-        ctx.globalAlpha = 0.16 + reveal * 0.18;
-        ctx.strokeStyle = rgba(mood.b, 0.74);
-        ctx.lineWidth = isSmall ? 0.8 : 1;
-        for (let i = 0; i < points.length; i += 3) {
-          const point = points[i];
-          const next = points[(i + 11) % points.length];
+      if (gatherT < 0.98) {
+        ctx.strokeStyle = rgba(mood.a, 0.32);
+        ctx.lineWidth = isSmall ? 0.65 : 0.9;
+        for (let i = 0; i < visiblePoints.length; i += 2) {
+          const point = visiblePoints[i];
+          if (point.local <= 0.04 || point.local >= 0.96) continue;
+          ctx.globalAlpha = (1 - point.local) * 0.42;
           ctx.beginPath();
-          ctx.moveTo(point.x, point.y);
-          ctx.lineTo(next.x, next.y);
+          ctx.moveTo(lerp(point.x, cx, 0.12), lerp(point.y, cy, 0.12));
+          ctx.lineTo(point.x, point.y);
           ctx.stroke();
         }
       }
 
-      points.forEach(function (point, i) {
+      if (inkT > 0.05) {
+        const bloom = ctx.createRadialGradient(cx, cy - unit * 2, unit, cx, cy, unit * 19);
+        bloom.addColorStop(0, rgba(mood.b, 0.12 * inkT + 0.08 * beatGlow));
+        bloom.addColorStop(0.58, rgba(mood.a, 0.05 * inkT + 0.04 * beatGlow));
+        bloom.addColorStop(1, rgba(mood.a, 0));
+        ctx.globalAlpha = 0.9;
+        ctx.fillStyle = bloom;
+        ctx.fillRect(cx - unit * 20, cy - unit * 20, unit * 40, unit * 40);
+      }
+
+      if (drawT > 0) {
+        const outlineEnd = Math.max(2, Math.floor(state.outline.length * drawT));
+        ctx.globalAlpha = 0.22 + 0.17 * drawT + 0.18 * beatGlow;
+        ctx.strokeStyle = rgba(mood.a, 0.86);
+        ctx.shadowColor = rgba(mood.a, 0.8);
+        ctx.shadowBlur = isSmall ? 6 : 9;
+        ctx.lineWidth = isSmall ? 3.4 : 4.8;
+        strokeFinalHeartOutline(ctx, state.outline, outlineEnd, cx, cy, unit, beat);
+        ctx.globalAlpha = 0.62 + 0.18 * beatGlow;
+        ctx.strokeStyle = rgba(mood.c, 0.95);
+        ctx.shadowBlur = isSmall ? 3 : 5;
+        ctx.lineWidth = isSmall ? 1 : 1.25;
+        strokeFinalHeartOutline(ctx, state.outline, outlineEnd, cx, cy, unit, beat);
+        ctx.shadowBlur = 0;
+
+        if (drawT < 1 && !reduceMotion) {
+          const head = state.outline[outlineEnd - 1];
+          if (head) {
+            ctx.globalAlpha = 0.95;
+            ctx.fillStyle = rgba(mood.c, 1);
+            ctx.shadowColor = rgba(mood.c, 1);
+            ctx.shadowBlur = isSmall ? 8 : 12;
+            ctx.beginPath();
+            ctx.arc(cx + head.hx * unit * beat, cy + head.hy * unit * beat, isSmall ? 2.2 : 2.8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+          }
+        }
+
+        if (drawT >= 1 && !state.burstFired && !reduceMotion) {
+          state.burstFired = true;
+          window.dispatchEvent(new CustomEvent("loveburst", {
+            detail: { x: cx, y: cy + 17 * unit * beat, count: 7, spread: 24 }
+          }));
+        }
+      }
+
+      ctx.shadowColor = rgba(mood.c, 0.82);
+      ctx.shadowBlur = isSmall ? 4 : 7;
+      visiblePoints.forEach(function (point, i) {
         const twinkle = 0.62 + 0.38 * Math.sin(now * 0.003 + point.phase);
-        const size = (isSmall ? 1.8 : 2.35) + (i % 7 === 0 ? 1.4 : 0);
-        ctx.globalAlpha = reveal * twinkle;
-        ctx.fillStyle = i % 3 ? rgba(mood.c, 0.96) : rgba(mood.b, 0.9);
-        ctx.shadowColor = ctx.fillStyle;
-        ctx.shadowBlur = 12 + labelReveal * 8;
+        const size = (isSmall ? 1.45 : 1.9) + (i % 8 === 0 ? 0.9 : 0);
+        ctx.globalAlpha = clamp(reveal * twinkle * (0.28 + point.local * 0.72), 0, 0.95);
+        ctx.fillStyle = point.warm ? rgba(mood.c, 0.95) : rgba(mood.b, 0.88);
         ctx.beginPath();
-        ctx.arc(point.x, point.y, size * (0.75 + labelReveal * 0.3), 0, Math.PI * 2);
+        ctx.arc(point.x, point.y, size * (0.9 + inkT * 0.16 + beatGlow * 0.2), 0, Math.PI * 2);
         ctx.fill();
       });
+      ctx.shadowBlur = 0;
 
-      if (labelReveal > 0) {
-        const labelEase = easeOutCubic(labelReveal);
+      if (aliveT > 0.35 && !reduceMotion) {
+        ctx.strokeStyle = rgba(mood.c, 0.84);
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 3; i++) {
+          const shimmer = (now * 0.00035 + i * 0.31) % 1;
+          const point = state.outline[Math.floor(shimmer * (state.outline.length - 1))];
+          const sx = cx + point.hx * unit * beat;
+          const sy = cy + point.hy * unit * beat;
+          const alpha = aliveT * (0.22 + 0.22 * Math.sin(now * 0.002 + i));
+          const ray = unit * (0.8 + i * 0.18);
+          ctx.globalAlpha = alpha;
+          ctx.beginPath();
+          ctx.moveTo(sx - ray, sy); ctx.lineTo(sx + ray, sy);
+          ctx.moveTo(sx, sy - ray); ctx.lineTo(sx, sy + ray);
+          ctx.stroke();
+        }
+      }
+
+      if (inkT > 0) {
+        const wipe = reduceMotion ? inkT : easeInOutCubic(inkT);
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.shadowColor = rgba(mood.c, 0.86);
-        ctx.shadowBlur = 24;
-        ctx.globalAlpha = labelEase;
-        ctx.fillStyle = "rgba(246,242,233,0.96)";
-        ctx.font = (isSmall ? "44px" : "64px") + " Caveat, cursive";
-        ctx.fillText("M + S", cx, cy - unit * 0.25);
-        ctx.globalAlpha = labelEase * 0.92;
-        ctx.fillStyle = rgba(mood.c, 0.92);
-        ctx.font = (isSmall ? "15px" : "18px") + " Inter, system-ui, sans-serif";
-        ctx.letterSpacing = "4px";
-        ctx.fillText("08.02.2025", cx, cy + unit * 3.9);
-        ctx.letterSpacing = "0px";
+        const font = (isSmall ? "46px" : "68px") + " Caveat, cursive";
+        ctx.font = font;
+        const label = "M + S";
+        if (state.labelFont !== font) {
+          state.labelFont = font;
+          state.labelWidth = ctx.measureText(label).width;
+        }
+        const tw = state.labelWidth;
+        const left = cx - tw / 2 - 18;
+        const inkWidth = (tw + 36) * wipe;
 
-        ctx.globalAlpha = labelEase * (0.32 + 0.12 * Math.sin(now * 0.004));
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(left, cy - unit * 6.4, inkWidth, unit * 9.4);
+        ctx.clip();
+        ctx.shadowColor = rgba(mood.c, 0.74);
+        ctx.shadowBlur = isSmall ? 7 : 10;
+        ctx.globalAlpha = 0.97;
+        ctx.fillStyle = "rgba(246,242,233,0.97)";
+        ctx.fillText(label, cx, cy - unit * 0.25);
+        ctx.restore();
+      }
+
+      if (dateT > 0) {
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.globalAlpha = dateT * 0.9;
+        ctx.fillStyle = rgba(mood.c, 0.92);
+        ctx.shadowColor = rgba(mood.c, 0.5);
+        ctx.shadowBlur = isSmall ? 4 : 6;
+        ctx.font = (isSmall ? "15px" : "18px") + " Inter, system-ui, sans-serif";
+        ctx.fillText("08.02.2025", cx, cy + unit * 3.9 + (1 - dateT) * 10);
+        ctx.shadowBlur = 0;
+
+        ctx.globalAlpha = dateT * (0.22 + 0.08 * Math.sin(now * 0.004) + beatGlow * 0.12);
         ctx.strokeStyle = rgba(mood.c, 0.86);
         ctx.lineWidth = 1;
         ctx.setLineDash([3, 12]);
-        ctx.lineDashOffset = -now * 0.018;
+        ctx.lineDashOffset = reduceMotion ? 0 : -now * 0.018;
         ctx.beginPath();
-        ctx.arc(cx, cy, unit * 17.4, 0, Math.PI * 2);
+        ctx.arc(cx, cy, unit * (17.6 + beatGlow * 0.4), 0, Math.PI * 2);
         ctx.stroke();
+        ctx.setLineDash([]);
       }
       ctx.restore();
+    }
+
+    function strokeFinalHeartOutline(ctx, outline, count, cx, cy, unit, beat) {
+      const max = Math.min(count, outline.length);
+      if (max < 2) return;
+      ctx.beginPath();
+      const first = outline[0];
+      ctx.moveTo(cx + first.hx * unit * beat, cy + first.hy * unit * beat);
+      for (let i = 1; i < max; i++) {
+        const prev = outline[i - 1];
+        const cur = outline[i];
+        const px = cx + prev.hx * unit * beat;
+        const py = cy + prev.hy * unit * beat;
+        const nextX = cx + cur.hx * unit * beat;
+        const nextY = cy + cur.hy * unit * beat;
+        ctx.quadraticCurveTo(px, py, (px + nextX) / 2, (py + nextY) / 2);
+      }
+      ctx.stroke();
     }
 
     function drawSpline(ctx, points) {
@@ -1800,22 +1978,46 @@
     }
   }
 
-  /* ---------- 3C. INTERACTIVE PHOTO PRINTS ---------- */
+  /* ---------- 3C. PHOTO PORTALS — step inside the memory ----------
+     Clicking a print opens it as a full-screen portal: the memory becomes the
+     world (Ken-Burns sky + dust + parallax), the photo lands as a polaroid with
+     the caption handwritten on its bottom border, and ‹ › / arrows / swipe flip
+     between memories without leaving. Close flies the print back to its frame. */
   function setupPhotoViewer(hasGSAP) {
     const viewer = document.getElementById("photo-viewer");
     const viewerImg = document.getElementById("photo-viewer-img");
-    const caption = document.getElementById("photo-viewer-caption");
+    const captionTitle = document.getElementById("photo-viewer-caption");
+    const captionDate = document.getElementById("photo-viewer-date");
     const closeBtn = document.getElementById("photo-close");
+    const prevBtn = document.getElementById("photo-prev");
+    const nextBtn = document.getElementById("photo-next");
+    const counterIndex = document.getElementById("portal-index");
+    const counterTotal = document.getElementById("portal-total");
     const backdrop = viewer ? viewer.querySelector(".photo-viewer-backdrop") : null;
     const shell = viewer ? viewer.querySelector(".photo-viewer-shell") : null;
-    if (!viewer || !viewerImg || !caption || !closeBtn || !backdrop || !shell) return;
+    const print = viewer ? viewer.querySelector(".portal-print") : null;
+    const gloss = viewer ? viewer.querySelector(".portal-gloss") : null;
+    const skyA = viewer ? viewer.querySelector(".sky-a") : null;
+    const skyB = viewer ? viewer.querySelector(".sky-b") : null;
+    const dustBox = viewer ? viewer.querySelector(".portal-dust") : null;
+    if (!viewer || !viewerImg || !captionTitle || !closeBtn || !backdrop || !shell || !print) return;
 
-    let lastFocus = null;
-    const photos = document.querySelectorAll(".frame img");
+    const allowMotion = hasGSAP && !reduceMotion;
+    const gallery = [];
     const photoFrames = [];
-    photos.forEach(function (img) {
+    let current = -1;
+    let navLock = false;
+    let skyFlip = false;
+    let idleTween = null;
+    let lastFocus = null;
+    const preloaded = {};
+    const par = { x: 0, y: 0, tx: 0, ty: 0, raf: 0, on: false };
+
+    document.querySelectorAll(".frame img").forEach(function (img) {
+      const meta = getPhotoMeta(img);
       const label = getPhotoCaption(img);
       const frame = img.closest(".frame");
+      gallery.push({ img: img, frame: frame, meta: meta });
       img.setAttribute("role", "button");
       img.setAttribute("tabindex", "0");
       img.setAttribute("aria-label", label ? "open photo: " + label : "open photo");
@@ -1837,6 +2039,7 @@
         }
       });
     });
+    if (counterTotal) counterTotal.textContent = String(gallery.length);
 
     document.addEventListener("click", function (e) {
       if (viewer.classList.contains("is-open") || !photoFrames.length) return;
@@ -1854,91 +2057,294 @@
 
     closeBtn.addEventListener("click", closePhoto);
     backdrop.addEventListener("click", closePhoto);
+    if (prevBtn) prevBtn.addEventListener("click", function (e) { e.stopPropagation(); navigate(-1); });
+    if (nextBtn) nextBtn.addEventListener("click", function (e) { e.stopPropagation(); navigate(1); });
     document.addEventListener("keydown", function (e) {
-      if (e.key === "Escape" && viewer.classList.contains("is-open")) closePhoto();
+      if (!viewer.classList.contains("is-open")) return;
+      if (e.key === "Escape") closePhoto();
+      else if (e.key === "ArrowRight") navigate(1);
+      else if (e.key === "ArrowLeft") navigate(-1);
     });
+
+    // swipe between memories (any pointer — fast horizontal drag)
+    let swipe = null;
+    shell.addEventListener("pointerdown", function (e) {
+      if (e.target.closest("button")) { swipe = null; return; }
+      swipe = { x: e.clientX, y: e.clientY, t: Date.now() };
+    }, { passive: true });
+    shell.addEventListener("pointerup", function (e) {
+      if (!swipe) return;
+      const dx = e.clientX - swipe.x;
+      const dy = e.clientY - swipe.y;
+      const dt = Date.now() - swipe.t;
+      swipe = null;
+      if (dt < 650 && Math.abs(dx) > 46 && Math.abs(dx) > Math.abs(dy) * 1.4) navigate(dx < 0 ? 1 : -1);
+    }, { passive: true });
+
+    // cursor parallax — the world leans away, the print leans in
+    viewer.addEventListener("pointermove", function (e) {
+      if (!par.on) return;
+      par.tx = (e.clientX / innerWidth) * 2 - 1;
+      par.ty = (e.clientY / innerHeight) * 2 - 1;
+    }, { passive: true });
+
+    function wrapIndex(i) { return (i + gallery.length) % gallery.length; }
+    function srcFor(item) { return item.img.currentSrc || item.img.src || item.img.getAttribute("src"); }
+
+    function preload(i) {
+      if (!gallery.length) return;
+      const src = gallery[wrapIndex(i)].img.getAttribute("src");
+      if (!src || preloaded[src]) return;
+      preloaded[src] = true;
+      const im = new Image();
+      im.src = src;
+    }
+
+    function setContent(item) {
+      viewerImg.src = srcFor(item);
+      viewerImg.alt = item.meta.title || "photo memory";
+      captionTitle.textContent = item.meta.title;
+      captionDate.textContent = item.meta.date;
+      if (counterIndex) counterIndex.textContent = String(gallery.indexOf(item) + 1);
+      shell.setAttribute("aria-label", "photo memory" + (item.meta.title ? " — " + item.meta.title : ""));
+    }
+
+    function setSky(src) {
+      if (!skyA || !skyB) return;
+      const incoming = skyFlip ? skyA : skyB;
+      const outgoing = skyFlip ? skyB : skyA;
+      skyFlip = !skyFlip;
+      incoming.style.backgroundImage = "url(\"" + src.replace(/"/g, "\\\"") + "\")";
+      incoming.classList.add("is-live");
+      outgoing.classList.remove("is-live");
+    }
+
+    function spawnDust() {
+      if (!dustBox || dustBox.childElementCount || reduceMotion) return;
+      const total = isSmall ? 10 : 16;
+      for (let i = 0; i < total; i++) {
+        const mote = document.createElement("span");
+        mote.className = "dust-mote tint-" + (i % 3);
+        mote.style.left = (4 + Math.random() * 92).toFixed(1) + "%";
+        mote.style.setProperty("--size", (2.5 + Math.random() * 4.5).toFixed(1) + "px");
+        mote.style.setProperty("--dur", (9 + Math.random() * 9).toFixed(1) + "s");
+        mote.style.setProperty("--delay", (-Math.random() * 14).toFixed(1) + "s");
+        mote.style.setProperty("--sway", ((Math.random() - 0.5) * 60).toFixed(0) + "px");
+        mote.style.setProperty("--peak", (0.3 + Math.random() * 0.45).toFixed(2));
+        dustBox.appendChild(mote);
+      }
+    }
+
+    function captionWriteOn(delay) {
+      if (!window.gsap) {
+        captionTitle.style.clipPath = "none";
+        captionDate.style.opacity = "1";
+        return;
+      }
+      gsap.killTweensOf([captionTitle, captionDate]);
+      gsap.fromTo(captionTitle,
+        { clipPath: "inset(-14% 103% -18% -3%)", autoAlpha: 1, y: 0 },
+        { clipPath: "inset(-14% -3% -18% -3%)", duration: reduceMotion ? 0.01 : 0.72, delay: delay, ease: "power2.out" });
+      gsap.fromTo(captionDate,
+        { autoAlpha: 0, y: 7 },
+        { autoAlpha: 1, y: 0, duration: reduceMotion ? 0.01 : 0.45, delay: delay + 0.32, ease: "power2.out" });
+    }
+
+    function glossSweep(delay) {
+      if (!gloss || !allowMotion) return;
+      gsap.killTweensOf(gloss);
+      gsap.fromTo(gloss, { xPercent: -165 }, { xPercent: 165, duration: 0.95, delay: delay, ease: "power2.inOut" });
+    }
+
+    function startIdle() {
+      if (!allowMotion) return;
+      stopIdle();
+      idleTween = gsap.to(print, {
+        y: "-=7", rotationZ: "-=0.55", duration: 3.1, ease: "sine.inOut", yoyo: true, repeat: -1
+      });
+    }
+    function stopIdle() {
+      if (idleTween) { idleTween.kill(); idleTween = null; }
+    }
+
+    function startParallax() {
+      if (!allowMotion || isSmall) return;
+      par.on = true;
+      par.x = par.y = par.tx = par.ty = 0;
+      const step = function () {
+        if (!par.on) return;
+        par.x += (par.tx - par.x) * 0.06;
+        par.y += (par.ty - par.y) * 0.06;
+        viewer.style.setProperty("--par-x", par.x.toFixed(4));
+        viewer.style.setProperty("--par-y", par.y.toFixed(4));
+        par.raf = requestAnimationFrame(step);
+      };
+      par.raf = requestAnimationFrame(step);
+    }
+    function stopParallax() {
+      par.on = false;
+      if (par.raf) cancelAnimationFrame(par.raf);
+      viewer.style.setProperty("--par-x", "0");
+      viewer.style.setProperty("--par-y", "0");
+    }
 
     function openPhoto(img) {
       if (viewer.classList.contains("is-open")) return;
+      const index = gallery.findIndex(function (item) { return item.img === img; });
+      current = index >= 0 ? index : 0;
+      const item = gallery[current];
       lastFocus = document.activeElement;
-      const src = img.currentSrc || img.src || img.getAttribute("src");
-      const text = getPhotoCaption(img);
+      spawnDust();
+
       const origin = img.getBoundingClientRect();
       const originX = origin.left + origin.width / 2;
       const originY = origin.top + origin.height / 2;
-      viewer.style.setProperty("--portal-bg", "url(\"" + src.replace(/"/g, "\\\"") + "\")");
       viewer.style.setProperty("--portal-x", ((originX / innerWidth) * 100).toFixed(2) + "%");
       viewer.style.setProperty("--portal-y", ((originY / innerHeight) * 100).toFixed(2) + "%");
-      viewerImg.src = src;
-      viewerImg.alt = img.alt || text || "photo memory";
-      caption.textContent = text;
+      setContent(item);
+      setSky(srcFor(item));
       viewer.classList.add("is-open");
       viewer.setAttribute("aria-hidden", "false");
       document.body.classList.add("viewer-open");
       closeBtn.focus({ preventScroll: true });
-
-      if (hasGSAP) {
-        requestAnimationFrame(function () {
-          const target = viewerImg.getBoundingClientRect();
-          const targetX = target.left + target.width / 2;
-          const targetY = target.top + target.height / 2;
-          const scale = target.width ? Math.max(0.08, Math.min(1.6, origin.width / target.width)) : 0.4;
-          gsap.killTweensOf([viewer, shell, viewerImg, caption]);
-          gsap.fromTo(viewer,
-            { clipPath: "circle(" + Math.max(40, origin.width * 0.35) + "px at " + originX + "px " + originY + "px)" },
-            { clipPath: "circle(150% at " + originX + "px " + originY + "px)", duration: 0.82,
-              ease: "power3.inOut", clearProps: "clipPath" });
-          gsap.fromTo(shell,
-            { autoAlpha: 0, z: -80, rotationX: 9 },
-            { autoAlpha: 1, z: 0, rotationX: 0, duration: 0.76, delay: 0.08, ease: "power3.out" });
-          gsap.fromTo(viewerImg,
-            { x: originX - targetX, y: originY - targetY, scale: scale, rotationZ: -5, rotationY: -12 },
-            { x: 0, y: 0, scale: 1, rotationZ: -1.2, rotationY: 0, duration: 0.92, delay: 0.04,
-              ease: "power4.inOut" });
-          gsap.fromTo(caption, { autoAlpha: 0, y: 22 }, { autoAlpha: 1, y: 0, duration: 0.5, delay: 0.48, ease: "power2.out" });
-        });
-      }
+      preload(current + 1);
+      preload(current - 1);
 
       window.dispatchEvent(new CustomEvent("loveburst", {
         detail: { x: originX, y: originY, count: 14, spread: Math.min(180, Math.max(origin.width, origin.height)) }
       }));
+
+      if (allowMotion) {
+        requestAnimationFrame(function () {
+          const target = print.getBoundingClientRect();
+          const targetX = target.left + target.width / 2;
+          const targetY = target.top + target.height / 2;
+          const scale = target.width ? Math.max(0.08, Math.min(1.6, origin.width / target.width)) : 0.4;
+          gsap.killTweensOf([viewer, shell, print, captionTitle, captionDate]);
+          gsap.fromTo(viewer,
+            { clipPath: "circle(" + Math.max(40, origin.width * 0.35) + "px at " + originX + "px " + originY + "px)" },
+            { clipPath: "circle(150% at " + originX + "px " + originY + "px)", duration: 0.85,
+              ease: "power3.inOut", clearProps: "clipPath" });
+          const flight = gsap.timeline();
+          flight.fromTo(print,
+            { x: originX - targetX, y: originY - targetY, scale: scale, rotationZ: -8 },
+            { x: 0, y: 0, scale: 1, rotationZ: -1.6, duration: 0.9, ease: "power4.inOut" });
+          flight.to(print, { rotationZ: -1.2, duration: 0.34, ease: "back.out(2.6)" }, ">-0.04");
+          flight.add(startIdle);
+          glossSweep(0.62);
+          captionWriteOn(0.56);
+        });
+        startParallax();
+      } else {
+        captionTitle.style.clipPath = "none";
+        captionDate.style.opacity = "1";
+      }
+    }
+
+    function navigate(dir) {
+      if (!viewer.classList.contains("is-open") || gallery.length < 2 || navLock) return;
+      current = wrapIndex(current + dir);
+      const item = gallery[current];
+      preload(current + dir);
+      preload(current - dir);
+      viewer.style.setProperty("--portal-x", "50%");
+      viewer.style.setProperty("--portal-y", "50%");
+
+      if (!allowMotion) {
+        setContent(item);
+        setSky(srcFor(item));
+        captionTitle.style.clipPath = "none";
+        captionDate.style.opacity = "1";
+        return;
+      }
+
+      navLock = true;
+      stopIdle();
+      gsap.killTweensOf([print, captionTitle, captionDate]);
+      const tl = gsap.timeline({ onComplete: function () { navLock = false; } });
+      tl.to([captionTitle, captionDate], { autoAlpha: 0, y: 8, duration: 0.16, ease: "power1.in" }, 0);
+      tl.to(print, { x: -64 * dir, rotationZ: -5 * dir, autoAlpha: 0.001, duration: 0.3, ease: "power2.in" }, 0);
+      tl.add(function () {
+        setContent(item);
+        setSky(srcFor(item));
+        gsap.set(print, { x: 70 * dir, y: 0, rotationZ: 4.5 * dir, autoAlpha: 0.001 });
+      });
+      tl.to(print, { x: 0, rotationZ: -1.2, autoAlpha: 1, duration: 0.55, ease: "power3.out" });
+      tl.add(function () {
+        glossSweep(0);
+        captionWriteOn(0.04);
+        startIdle();
+        const rect = print.getBoundingClientRect();
+        window.dispatchEvent(new CustomEvent("loveburst", {
+          detail: { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, count: 6, spread: 90 }
+        }));
+      }, ">-0.28");
     }
 
     function closePhoto() {
+      if (!viewer.classList.contains("is-open")) return;
       function finishClose() {
         viewer.classList.remove("is-open");
         viewer.setAttribute("aria-hidden", "true");
-        viewer.style.removeProperty("--portal-bg");
         document.body.classList.remove("viewer-open");
+        stopParallax();
+        navLock = false;
+        if (window.gsap) gsap.set([viewer, shell, print, viewerImg, captionTitle, captionDate], { clearProps: "all" });
         if (lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true });
       }
-      if (hasGSAP && viewer.classList.contains("is-open")) {
-        gsap.killTweensOf([viewer, shell, viewerImg, caption]);
-        gsap.to(caption, { autoAlpha: 0, y: 14, duration: 0.18, ease: "power1.in" });
-        gsap.to(viewerImg, { scale: 0.92, rotationZ: 2, autoAlpha: 0, duration: 0.32, ease: "power2.in" });
-        gsap.to(viewer, { opacity: 0, duration: 0.34, ease: "power1.in", onComplete: function () {
-          gsap.set(viewer, { clearProps: "opacity" });
-          gsap.set([viewerImg, caption, shell], { clearProps: "all" });
-          finishClose();
-        } });
+      stopIdle();
+      if (allowMotion) {
+        gsap.killTweensOf([viewer, shell, print, viewerImg, captionTitle, captionDate]);
+        const item = gallery[current];
+        const rect = item ? item.img.getBoundingClientRect() : null;
+        const printRect = print.getBoundingClientRect();
+        const printX = printRect.left + printRect.width / 2;
+        const printY = printRect.top + printRect.height / 2;
+        const visible = rect && rect.width > 0 && rect.bottom > 0 && rect.top < innerHeight;
+        gsap.to([captionTitle, captionDate], { autoAlpha: 0, y: 10, duration: 0.15, ease: "power1.in" });
+        if (visible) {
+          // fly the print home into its frame, and collapse the portal onto it
+          const rx = rect.left + rect.width / 2;
+          const ry = rect.top + rect.height / 2;
+          gsap.to(print, {
+            x: "+=" + (rx - printX), y: "+=" + (ry - printY),
+            scale: Math.max(0.08, rect.width / Math.max(1, printRect.width)),
+            rotationZ: -5, duration: 0.55, ease: "power3.inOut"
+          });
+          gsap.fromTo(viewer,
+            { clipPath: "circle(150% at " + rx + "px " + ry + "px)" },
+            { clipPath: "circle(0px at " + rx + "px " + ry + "px)", duration: 0.6, delay: 0.05,
+              ease: "power3.inOut", onComplete: finishClose });
+        } else {
+          gsap.to(print, { scale: 0.85, autoAlpha: 0, y: "+=26", duration: 0.34, ease: "power2.in" });
+          gsap.to(viewer, { opacity: 0, duration: 0.36, ease: "power1.in", onComplete: finishClose });
+        }
       } else {
         finishClose();
       }
     }
   }
 
-  function getPhotoCaption(img) {
+  function getPhotoMeta(img) {
     const moment = img.closest("[data-moment]");
     if (moment) {
       const date = moment.querySelector(".moment-date");
       const title = moment.querySelector(".moment-title");
-      return [date ? date.textContent.trim() : "", title ? title.textContent.trim() : ""].filter(Boolean).join(" · ");
+      return {
+        date: date ? date.textContent.trim() : "",
+        title: title ? title.textContent.trim() : (img.alt || "one of our pages")
+      };
     }
     const src = img.getAttribute("src");
     const match = Array.prototype.slice.call(document.querySelectorAll("[data-moment] img"))
       .find(function (candidate) { return candidate.getAttribute("src") === src; });
-    if (match) return getPhotoCaption(match);
-    return img.alt || "one of our pages";
+    if (match && match !== img) return getPhotoMeta(match);
+    return { date: "", title: img.alt || "one of our pages" };
+  }
+
+  function getPhotoCaption(img) {
+    const meta = getPhotoMeta(img);
+    return [meta.date, meta.title].filter(Boolean).join(" · ");
   }
 
   function setupPhotoTilt() {

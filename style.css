@@ -187,42 +187,71 @@ body.entered #ambience::before{animation:world-breathe 18s ease-in-out infinite 
 #progress{position:fixed;top:0;left:0;height:3px;width:100%;transform:scaleX(0);transform-origin:0 50%;
   background:linear-gradient(90deg,var(--blue),var(--blush),var(--gold));z-index:120;will-change:transform;pointer-events:none}
 
-/* ============ PHOTO VIEWER ============ */
+/* ============ PHOTO PORTALS ============ */
 .photo-viewer{
-  --portal-bg:none;
   --portal-x:50%;
   --portal-y:50%;
+  --par-x:0;
+  --par-y:0;
   position:fixed;inset:0;z-index:140;display:grid;place-items:center;padding:28px;
   opacity:0;visibility:hidden;pointer-events:none;transition:opacity .35s ease, visibility .35s ease;
-  isolation:isolate;overflow:hidden;background:rgba(5,9,24,.72)
+  isolation:isolate;overflow:hidden;background:rgba(4,8,22,.78)
 }
 .photo-viewer.is-open{opacity:1;visibility:visible;pointer-events:auto}
-.photo-viewer::before{
-  content:"";position:absolute;inset:-8%;z-index:0;opacity:0;pointer-events:none;
-  background-image:var(--portal-bg);background-size:cover;background-position:center;
-  filter:blur(20px) saturate(1.22) brightness(.7);transform:scale(1.08);
-  transform-origin:var(--portal-x) var(--portal-y);
-  transition:opacity .6s ease, transform 1.4s cubic-bezier(.2,.8,.2,1)
+
+/* the memory becomes the world: twin crossfading skies + dust + vignette */
+.portal-world{position:absolute;inset:0;z-index:0;pointer-events:none}
+.portal-sky{
+  position:absolute;inset:-9%;background-size:cover;background-position:center;opacity:0;
+  filter:blur(26px) saturate(1.24) brightness(.6);
+  transform:translate3d(calc(var(--par-x)*-16px), calc(var(--par-y)*-11px), 0) scale(1.12);
+  transition:opacity .9s ease;will-change:opacity,transform
 }
-.photo-viewer::after{
-  content:"";position:absolute;inset:0;z-index:1;opacity:0;pointer-events:none;
+.portal-sky.is-live{opacity:.9}
+.photo-viewer.is-open .portal-sky.is-live{animation:portalKen 26s ease-in-out infinite alternate}
+@keyframes portalKen{
+  from{transform:translate3d(calc(var(--par-x)*-16px + 1.1%), calc(var(--par-y)*-11px + .5%), 0) scale(1.12)}
+  to{transform:translate3d(calc(var(--par-x)*-16px - 1.1%), calc(var(--par-y)*-11px - .7%), 0) scale(1.2)}
+}
+.portal-vignette{
+  position:absolute;inset:0;opacity:0;transition:opacity .5s ease;
   background:
-    radial-gradient(circle at var(--portal-x) var(--portal-y), rgba(var(--mood-c),.2), transparent 28%),
-    radial-gradient(circle at 18% 82%, rgba(var(--mood-b),.18), transparent 34%),
-    linear-gradient(180deg, rgba(5,9,24,.1), rgba(5,9,24,.72));
-  transition:opacity .5s ease
+    radial-gradient(circle at var(--portal-x) var(--portal-y), rgba(var(--mood-c),.18), transparent 30%),
+    radial-gradient(circle at 16% 84%, rgba(var(--mood-b),.16), transparent 36%),
+    radial-gradient(120% 90% at 50% 50%, transparent 46%, rgba(3,6,18,.66) 100%),
+    linear-gradient(180deg, rgba(4,8,22,.12), rgba(4,8,22,.58))
 }
-.photo-viewer.is-open::before{opacity:.82;transform:scale(1.02)}
-.photo-viewer.is-open::after{opacity:1}
+.photo-viewer.is-open .portal-vignette{opacity:1}
+.portal-dust{position:absolute;inset:0;overflow:hidden;transform:translate3d(calc(var(--par-x)*-26px), calc(var(--par-y)*-18px), 0)}
+.dust-mote{
+  position:absolute;top:104%;width:var(--size,4px);height:var(--size,4px);border-radius:50%;opacity:0;
+  animation:dustRise var(--dur,12s) linear var(--delay,0s) infinite;animation-play-state:paused;
+  will-change:transform,opacity
+}
+.photo-viewer.is-open .dust-mote{animation-play-state:running}
+.dust-mote.tint-0{background:rgba(var(--mood-c),.9);box-shadow:0 0 12px rgba(var(--mood-c),.8)}
+.dust-mote.tint-1{background:rgba(var(--mood-b),.85);box-shadow:0 0 10px rgba(var(--mood-b),.7)}
+.dust-mote.tint-2{background:rgba(246,242,233,.85);box-shadow:0 0 10px rgba(246,242,233,.6)}
+@keyframes dustRise{
+  0%{transform:translate3d(0,0,0);opacity:0}
+  8%{opacity:var(--peak,.5)}
+  55%{transform:translate3d(var(--sway,20px),-58vh,0)}
+  92%{opacity:calc(var(--peak,.5)*.4)}
+  100%{transform:translate3d(calc(var(--sway,20px)*.4),-112vh,0);opacity:0}
+}
+
 .photo-viewer-backdrop{
-  position:absolute;inset:0;z-index:2;border:0;
+  position:absolute;inset:0;z-index:1;border:0;
   background:
-    radial-gradient(circle at var(--portal-x) var(--portal-y), transparent 0 18%, rgba(5,9,24,.28) 42%, rgba(5,9,24,.78) 100%);
-  backdrop-filter:blur(10px);cursor:zoom-out
+    radial-gradient(circle at var(--portal-x) var(--portal-y), transparent 0 16%, rgba(4,8,22,.24) 44%, rgba(4,8,22,.7) 100%);
+  backdrop-filter:blur(9px);cursor:zoom-out
 }
+
+/* the polaroid — caption is handwritten ON the print's bottom border */
 .photo-viewer-shell{
-  position:relative;z-index:3;display:grid;justify-items:center;gap:16px;
-  max-width:min(92vw,1080px);max-height:90vh;perspective:1200px;transform-style:preserve-3d
+  position:relative;z-index:3;display:grid;justify-items:center;
+  max-width:min(92vw,1080px);max-height:92vh;perspective:1300px;transform-style:preserve-3d;
+  user-select:none;-webkit-user-select:none;touch-action:pan-y
 }
 .photo-viewer-shell::before{
   content:"";position:absolute;inset:-26px;z-index:-1;border-radius:28px;opacity:.78;pointer-events:none;
@@ -230,25 +259,75 @@ body.entered #ambience::before{animation:world-breathe 18s ease-in-out infinite 
     conic-gradient(from 120deg, rgba(var(--mood-a),0), rgba(var(--mood-c),.38), rgba(var(--mood-b),.22), rgba(var(--mood-a),0));
   filter:blur(18px);transform:rotate(-2deg)
 }
-#photo-viewer-img{
-  max-width:100%;max-height:76vh;width:auto;height:auto;object-fit:contain;
-  border:12px solid rgba(255,248,232,.96);border-bottom-width:34px;border-radius:8px;
-  background:#fff8e8;box-shadow:0 42px 100px -38px rgba(0,0,0,.85);
-  transform:rotate(-1.2deg);transform-origin:center;will-change:transform
+.portal-tilt{
+  transform:rotateY(calc(var(--par-x)*4.5deg)) rotateX(calc(var(--par-y)*-3.5deg));
+  transform-style:preserve-3d;will-change:transform
 }
-#photo-viewer-caption{
-  max-width:min(84vw,760px);padding:8px 18px;border-radius:999px;
-  font-family:var(--hand);font-size:clamp(1.3rem,2.6vw,2rem);color:var(--cream);
-  text-align:center;text-shadow:0 2px 18px rgba(0,0,0,.65);
-  background:rgba(8,14,38,.34);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(8px)
+.portal-print{
+  position:relative;margin:0;border-radius:10px;
+  background:linear-gradient(180deg,#fffaf0,#fbf2dd);
+  padding:clamp(10px,1.6vw,16px);
+  padding-bottom:clamp(58px,9vh,86px);
+  box-shadow:0 48px 110px -42px rgba(0,0,0,.9), 0 18px 44px -20px rgba(0,0,0,.6);
+  transform:rotate(-1.3deg);will-change:transform
 }
+.portal-print-media{position:relative;display:block;overflow:hidden;border-radius:4px;background:#0b1026}
+#photo-viewer-img{display:block;max-width:min(84vw,880px);max-height:min(62vh,760px);width:auto;height:auto}
+.portal-gloss{
+  position:absolute;inset:-2%;pointer-events:none;transform:translateX(-165%);
+  background:linear-gradient(105deg, transparent 42%, rgba(255,255,255,.34) 50%, transparent 58%)
+}
+.portal-ink{
+  position:absolute;left:0;right:0;bottom:0;height:clamp(58px,9vh,86px);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transform:rotate(-.6deg);pointer-events:none;padding:0 14px
+}
+.portal-ink-title{
+  font-family:var(--hand);font-weight:600;color:#28325c;
+  font-size:clamp(1.4rem,2.9vw,2.05rem);line-height:1.05;text-align:center;
+  max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+.portal-ink-date{
+  font-family:var(--hand);color:rgba(40,50,92,.66);
+  font-size:clamp(.98rem,2vw,1.2rem);margin-top:2px
+}
+.portal-ink-date:empty{display:none}
+
 .photo-close{
-  position:absolute;top:-18px;right:-18px;z-index:4;width:44px;height:44px;border-radius:50%;
+  position:absolute;top:-16px;right:-16px;z-index:5;width:44px;height:44px;border-radius:50%;
   border:1px solid rgba(255,255,255,.42);background:rgba(10,18,48,.82);color:var(--cream);
   font-size:1.8rem;line-height:1;cursor:pointer;box-shadow:0 16px 38px -20px rgba(0,0,0,.7)
 }
 .photo-close:hover{background:rgba(255,159,182,.2)}
+.portal-nav{
+  position:absolute;top:50%;z-index:4;width:48px;height:48px;border-radius:50%;
+  transform:translateY(-50%);border:1px solid rgba(255,255,255,.28);
+  background:rgba(8,14,38,.55);backdrop-filter:blur(8px);color:var(--cream);
+  font-size:1.9rem;line-height:1;cursor:pointer;opacity:.85;
+  transition:transform .25s ease, background .25s ease, opacity .25s ease
+}
+.portal-prev{left:clamp(10px,3vw,34px)}
+.portal-next{right:clamp(10px,3vw,34px)}
+.portal-nav:hover{background:rgba(255,159,182,.24);transform:translateY(-50%) scale(1.08);opacity:1}
+.portal-count{
+  position:absolute;left:50%;bottom:clamp(12px,3vh,24px);transform:translateX(-50%);z-index:4;margin:0;
+  font-family:'Inter',system-ui,sans-serif;font-size:.72rem;letter-spacing:.24em;
+  color:rgba(246,242,233,.55)
+}
 body.viewer-open{overflow:hidden}
+
+@media (max-width:760px){
+  .photo-viewer{padding:16px}
+  #photo-viewer-img{max-width:86vw;max-height:52vh}
+  .portal-nav{width:40px;height:40px;font-size:1.6rem}
+  .portal-print{padding-bottom:56px}
+  .portal-ink{height:56px}
+}
+@media (prefers-reduced-motion: reduce){
+  .photo-viewer.is-open .portal-sky.is-live{animation:none}
+  .dust-mote{animation:none;opacity:0}
+  .portal-tilt{transform:none}
+}
 
 /* ============ RICHER REVEALS (added via JS) ============ */
 .r-clip{transform:translateY(34px) scale(.985);filter:saturate(.85) brightness(.72);
