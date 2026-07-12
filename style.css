@@ -67,7 +67,7 @@ body::after{
 body.entered::after{animation:stars-drift 42s linear infinite}
 @keyframes stars-drift{to{background-position:600px 600px}}
 
-#trail{position:fixed;inset:0;z-index:60;pointer-events:none}
+#trail{position:fixed;inset:0;z-index:60;pointer-events:none;contain:strict;transition:opacity .12s linear}
 
 /* ============ AMBIENT STORY BACKDROP ============ */
 #ambience{
@@ -149,8 +149,9 @@ body.scrolling-fast .ambient-wash{mix-blend-mode:normal;opacity:.5}
 body.scrolling-fast .ambient-ribbon{opacity:0;filter:none}
 body.scrolling-fast #constellation-canvas,
 body.scrolling-fast #journey-canvas{mix-blend-mode:normal}
-body.scrolling-fast #constellation-canvas{opacity:.78}
-body.scrolling-fast #journey-canvas{opacity:.62}
+body.scrolling-fast #constellation-canvas{opacity:.68}
+body.scrolling-fast #journey-canvas{opacity:.52}
+body.scrolling-fast #trail{opacity:0}
 
 /* ============ OVERLAYS (gate + intro) ============ */
 .overlay{

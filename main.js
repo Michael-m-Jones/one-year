@@ -47,7 +47,7 @@
     lastT: 0,
     movingUntil: 0
   };
-  const FAST_SCROLL_ENTER = 1250;
+  const FAST_SCROLL_ENTER = 900;
 
   let unlocked = false;
   try { unlocked = sessionStorage.getItem(UKEY) === "1"; } catch (e) {}
@@ -186,8 +186,8 @@
       // Parallax inside each moment photo (depth)
       document.querySelectorAll("[data-moment] .frame img").forEach(function (img) {
         const frame = img.closest(".frame");
-        gsap.fromTo(img, { yPercent: -10, scale: 1.18 }, { yPercent: 10, scale: 1.18, ease: "none",
-          scrollTrigger: { trigger: frame, start: "top bottom", end: "bottom top", scrub: true } });
+        gsap.fromTo(img, { yPercent: -6, scale: 1.1 }, { yPercent: 6, scale: 1.1, ease: "none",
+          scrollTrigger: { trigger: frame, start: "top bottom", end: "bottom top", scrub: 0.35 } });
       });
 
       gsap.set("[data-moment]", { perspective: 1400 });
@@ -196,26 +196,19 @@
         transformPerspective: 1200
       });
 
-      // Text breathes against the image motion, creating a more guided story beat.
-      document.querySelectorAll("[data-moment] .moment-text").forEach(function (text, i) {
-        const dir = text.closest(".moment").classList.contains("reverse") ? -1 : 1;
-        gsap.fromTo(text, { yPercent: 10, z: 12, rotateY: dir * -2.5 },
-          { yPercent: -10, z: 74, rotateY: dir * 2.5, ease: "none",
-          scrollTrigger: { trigger: text.closest("[data-moment]"), start: "top bottom", end: "bottom top", scrub: true } });
-      });
-
-      // Whole memories drift as physical pages, without masking the actual photos.
+      // Whole memories drift gently as physical pages. The copy stays anchored so
+      // reading never competes with a moving 3D transform on lower-powered screens.
       document.querySelectorAll("[data-moment] .moment-media").forEach(function (media, i) {
         const dir = media.closest(".moment").classList.contains("reverse") ? -1 : 1;
-        gsap.fromTo(media, { rotateZ: dir * -3, rotateY: dir * 7, rotateX: -2, y: 42, z: -80 },
-          { rotateZ: dir * 2.8, rotateY: dir * -7, rotateX: 2, y: -42, z: 70, ease: "none",
-            scrollTrigger: { trigger: media.closest("[data-moment]"), start: "top bottom", end: "bottom top", scrub: true } });
+        gsap.fromTo(media, { rotateZ: dir * -1.4, rotateY: dir * 2.5, rotateX: -0.8, y: 22, z: -36 },
+          { rotateZ: dir * 1.4, rotateY: dir * -2.5, rotateX: 0.8, y: -22, z: 36, ease: "none",
+            scrollTrigger: { trigger: media.closest("[data-moment]"), start: "top bottom", end: "bottom top", scrub: 0.35 } });
       });
 
       // Chapter titles drift a touch (parallax)
       document.querySelectorAll(".chapter-title").forEach(function (t) {
-        gsap.fromTo(t, { yPercent: 14 }, { yPercent: -14, ease: "none",
-          scrollTrigger: { trigger: t.closest("[data-section]"), start: "top bottom", end: "bottom top", scrub: true } });
+        gsap.fromTo(t, { yPercent: 8 }, { yPercent: -8, ease: "none",
+          scrollTrigger: { trigger: t.closest("[data-section]"), start: "top bottom", end: "bottom top", scrub: 0.4 } });
       });
 
     }
@@ -244,7 +237,9 @@
     performanceState.lastT = performance.now();
 
     addEventListener("wheel", function (e) {
-      markScrollVelocity(Math.abs(e.deltaY || 0));
+      // Wheel deltas are per event, while Lenis reports a velocity. Normalize the
+      // two so a quick mouse-wheel pass receives the same lighter treatment.
+      markScrollVelocity(Math.abs(e.deltaY || 0) * 10);
     }, { passive: true });
 
     addEventListener("touchmove", function () {
@@ -1120,7 +1115,7 @@
     const pathNodeCache = [];
     const visiblePathCache = [];
     const livePathCache = [];
-    const stars = createStars(isSmall ? 36 : 72);
+    const stars = createStars(isSmall ? 32 : 56);
     const meteors = [];
     const root = document.documentElement;
     const fallbackMood = { a: "111 160 255", b: "255 159 182", c: "255 210 122", deep: "8 14 38" };
@@ -1214,8 +1209,8 @@
         : performanceState.fastScroll
           ? (isSmall ? 66 : 34)
         : finaleZone
-          ? (isScrolling ? (isSmall ? 56 : 34) : (isSmall ? 82 : 50))
-          : (isScrolling ? (isSmall ? 33 : 16) : (isSmall ? 66 : 40));
+          ? (isScrolling ? (isSmall ? 56 : 40) : (isSmall ? 82 : 58))
+          : (isScrolling ? (isSmall ? 36 : 24) : (isSmall ? 72 : 52));
       if (!document.hidden && now - lastCanvasFrame >= minFrameMs) {
         lastCanvasFrame = now;
         updateState();
@@ -1225,7 +1220,7 @@
     }
 
     function size() {
-      dpr = Math.min(isSmall ? 1.1 : 1.25, devicePixelRatio || 1);
+      dpr = Math.min(isSmall ? 1 : 1.1, devicePixelRatio || 1);
       w = innerWidth;
       h = innerHeight;
       [constellationCanvas, journeyCanvas].forEach(function (canvas) {
@@ -2765,11 +2760,13 @@
     if (!canvas || isSmall || reduceMotion) return;
     const ctx = canvas.getContext("2d", { alpha: true, desynchronized: true });
     const colors = ["#f8fbff", "#dceaff", "#a9c9ff", "#6fa0ff", "#c7dcff"];
-    const MAX_PARTICLES = 120;
+    const MAX_PARTICLES = 56;
     let w, h, dpr = 1, particles = [], last = null, pointer = null, lastSpark = 0, running = false;
+    let pendingPointer = null;
+    let pointerRaf = 0;
 
     function size() {
-      dpr = Math.min(1.5, window.devicePixelRatio || 1);
+      dpr = Math.min(1.2, window.devicePixelRatio || 1);
       w = canvas.width = Math.floor(innerWidth * dpr);
       h = canvas.height = Math.floor(innerHeight * dpr);
       canvas.style.width = innerWidth + "px";
@@ -2781,17 +2778,32 @@
     addEventListener("pointermove", function (e) {
       const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
       const point = events[events.length - 1] || e;
-      emitTrail(point.clientX, point.clientY, performance.now());
+      pendingPointer = { x: point.clientX, y: point.clientY, time: performance.now() };
+      if (pointerRaf) return;
+      pointerRaf = requestAnimationFrame(function () {
+        pointerRaf = 0;
+        const next = pendingPointer;
+        pendingPointer = null;
+        if (!next) return;
+        if (performanceState.fastScroll) {
+          last = { x: next.x, y: next.y, t: next.time };
+          pointer = null;
+          return;
+        }
+        emitTrail(next.x, next.y, next.time);
+      });
     }, { passive: true });
 
     addEventListener("pointerleave", function () {
       last = null;
       pointer = null;
+      pendingPointer = null;
     });
 
     addEventListener("blur", function () {
       last = null;
       pointer = null;
+      pendingPointer = null;
     });
 
     function emitTrail(x, y, now) {
@@ -2817,14 +2829,14 @@
         return;
       }
 
-      const spacing = speed > 24 ? 6.5 : speed > 10 ? 8.5 : 11;
-      const count = Math.max(1, Math.min(5, Math.ceil(dist / spacing)));
+      const spacing = speed > 24 ? 9 : speed > 10 ? 11 : 14;
+      const count = Math.max(1, Math.min(3, Math.ceil(dist / spacing)));
       for (let i = 1; i <= count; i++) {
         const p = i / count;
         const x = last.x + dx * p;
         const y = last.y + dy * p;
         addHeart(x, y, dx, dy, speed, i === count);
-        if (speed > 28 && i === count && now - lastSpark > 38) {
+        if (speed > 34 && i === count && now - lastSpark > 80) {
           addSpark(x, y, dx, dy);
           lastSpark = now;
         }
@@ -2842,7 +2854,7 @@
     });
 
     function burstAt(x, y, count, spread) {
-      const total = Math.min(count, 22);
+      const total = Math.min(count, 14);
       for (let i = 0; i < total; i++) {
         const angle = (Math.PI * 2 * i) / total;
         const ox = spread ? (Math.random() - 0.5) * spread : 0;
@@ -2919,7 +2931,7 @@
       ctx.closePath();
       ctx.fillStyle = p.color;
       ctx.shadowColor = p.color;
-      ctx.shadowBlur = life > 0.35 ? 12 * life : 0;
+      ctx.shadowBlur = life > 0.35 ? 7 * life : 0;
       ctx.globalAlpha = life * 0.95;
       ctx.fill();
       if (life > 0.45) {
@@ -2956,7 +2968,7 @@
       ctx.globalAlpha = Math.max(0, p.life) * 0.86;
       ctx.lineWidth = 1.7;
       ctx.shadowColor = p.color;
-      ctx.shadowBlur = 4;
+      ctx.shadowBlur = 2;
       ctx.beginPath();
       ctx.moveTo(-p.size, 0);
       ctx.lineTo(p.size, 0);
