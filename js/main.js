@@ -2641,7 +2641,7 @@
       let gapBefore = 0;
       writingTargets.forEach(function (token) {
         const text = token.textContent || "";
-        const duration = Math.min(0.24, 0.05 + text.length * 0.012);
+        const duration = Math.min(0.13, 0.024 + text.length * 0.006);
         writeTl.to(token, {
           clipPath: "inset(-6px 0% -6px 0)",
           opacity: 1,
@@ -2650,7 +2650,7 @@
           ease: "sine.out",
           onStart: function () { movePenTo(token); }
         }, "+=" + gapBefore);
-        gapBefore = /[.!?]$/.test(text) ? 0.11 : (/[,;:]$/.test(text) ? 0.055 : 0.018);
+        gapBefore = /[.!?]$/.test(text) ? 0.055 : (/[,;:]$/.test(text) ? 0.026 : 0.006);
       });
       if (pen) writeTl.to(pen, { opacity: 0, duration: 0.28, ease: "sine.out" }, "+=0.18");
     }
@@ -2684,6 +2684,19 @@
       } else {
         scrollTo({ top: targetScroll, behavior: reduceMotion ? "auto" : "smooth" });
       }
+      setTimeout(correctPaperPosition, reduceMotion ? 0 : 180);
+      setTimeout(correctPaperPosition, reduceMotion ? 0 : 760);
+    }
+
+    function correctPaperPosition() {
+      const rect = paper.getBoundingClientRect();
+      const targetTop = Math.max(34, (innerHeight - rect.height) / 2);
+      const targetBottom = Math.min(innerHeight - 34, targetTop + rect.height);
+      let delta = 0;
+      if (rect.top < targetTop - 6) delta = rect.top - targetTop;
+      else if (rect.bottom > targetBottom + 6) delta = rect.bottom - targetBottom;
+      if (Math.abs(delta) < 6) return;
+      scrollTo({ top: Math.max(0, scrollY + delta), behavior: "auto" });
     }
   }
 

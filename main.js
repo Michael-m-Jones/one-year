@@ -1335,7 +1335,7 @@
         drawMeteors(constellationCtx, now, mood);
       }
       drawMemoryConstellations(constellationCtx, nodes, now, mood, fastScroll);
-      if (!fastScroll || scrollProgress > 0.78) drawFinalHeart(constellationCtx, now, mood);
+      drawFinalHeart(constellationCtx, now, mood, fastScroll);
       drawJourneyPath(journeyCtx, pathNodeCache.length > 1 ? pathNodeCache : nodes, now, mood, fastScroll);
       if (!fastScroll) drawBookWake(journeyCtx, nodes, now, mood);
     }
@@ -1786,25 +1786,30 @@
       }
     }
 
-    function drawFinalHeart(ctx, now, mood) {
+    function drawFinalHeart(ctx, now, mood, fastScroll) {
       const state = finalHeartState();
-      const reveal = clamp((scrollProgress - 0.8) / 0.16, 0, 1);
-      if (reveal <= 0) {
+      const finaleReveal = clamp((scrollProgress - 0.78) / 0.16, 0, 1);
+      const ambientReveal = easeOutCubic(clamp((scrollProgress - 0.06) / 0.14, 0, 1)) * (isSmall ? 0.62 : 0.78);
+      const reveal = Math.max(ambientReveal, finaleReveal);
+      if (reveal <= 0.015 || (fastScroll && reveal < 0.18)) {
         state.burstFired = false;
         return;
       }
-      if (reveal < 0.2) state.burstFired = false;
+      if (finaleReveal < 0.2) state.burstFired = false;
 
-      const cx = w * (isSmall ? 0.5 : 0.72);
-      const cy = h * (isSmall ? 0.46 : 0.47);
-      const unit = Math.min(w, h) * (isSmall ? 0.0102 : 0.0122);
-      rebuildFinalHeart(state, cx, cy, unit, isSmall ? 26 : 34);
+      const cx = w * (isSmall ? 0.5 : 0.52);
+      const cy = h * (isSmall ? 0.43 : 0.47);
+      const unit = Math.min(w, h) * (isSmall ? 0.012 : 0.014);
+      rebuildFinalHeart(state, cx, cy, unit, isSmall ? 32 : 44);
 
-      const gatherT = reduceMotion ? 1 : easeInOutCubic(clamp(reveal / 0.52, 0, 1));
-      const drawT = reduceMotion ? 1 : easeInOutCubic(clamp((reveal - 0.24) / 0.46, 0, 1));
-      const inkT = easeOutCubic(clamp((reveal - (reduceMotion ? 0.18 : 0.56)) / 0.28, 0, 1));
-      const dateT = easeOutCubic(clamp((reveal - (reduceMotion ? 0.3 : 0.72)) / 0.22, 0, 1));
-      const aliveT = reduceMotion ? 0 : clamp((reveal - 0.86) / 0.14, 0, 1);
+      const gatherT = reduceMotion ? 1 : easeInOutCubic(clamp(reveal / 0.42, 0, 1));
+      const ambientDrawT = easeOutCubic(clamp((scrollProgress - 0.1) / 0.16, 0, 1));
+      const finalDrawT = reduceMotion ? 1 : easeInOutCubic(clamp((finaleReveal - 0.16) / 0.42, 0, 1));
+      const drawT = Math.max(ambientDrawT, finalDrawT);
+      const inkT = easeOutCubic(clamp((finaleReveal - (reduceMotion ? 0.18 : 0.56)) / 0.28, 0, 1));
+      const dateT = easeOutCubic(clamp((finaleReveal - (reduceMotion ? 0.3 : 0.72)) / 0.22, 0, 1));
+      const aliveT = reduceMotion ? 0 : Math.max(clamp((finaleReveal - 0.86) / 0.14, 0, 1), ambientReveal * 0.18);
+      const heartPresence = clamp(0.54 + reveal * 0.46 + finaleReveal * 0.18, 0, 1);
 
       let beat = 1;
       let beatGlow = 0;
@@ -1851,28 +1856,29 @@
         }
       }
 
-      if (inkT > 0.05) {
+      const glowT = Math.max(inkT, ambientReveal * 0.46);
+      if (glowT > 0.05) {
         const bloom = ctx.createRadialGradient(cx, cy - unit * 2, unit, cx, cy, unit * 19);
-        bloom.addColorStop(0, rgba(mood.b, 0.12 * inkT + 0.08 * beatGlow));
-        bloom.addColorStop(0.58, rgba(mood.a, 0.05 * inkT + 0.04 * beatGlow));
+        bloom.addColorStop(0, rgba(mood.b, 0.12 * glowT + 0.08 * beatGlow));
+        bloom.addColorStop(0.58, rgba(mood.a, 0.05 * glowT + 0.04 * beatGlow));
         bloom.addColorStop(1, rgba(mood.a, 0));
-        ctx.globalAlpha = 0.9;
+        ctx.globalAlpha = 0.72 + 0.18 * finaleReveal;
         ctx.fillStyle = bloom;
         ctx.fillRect(cx - unit * 20, cy - unit * 20, unit * 40, unit * 40);
       }
 
       if (drawT > 0) {
         const outlineEnd = Math.max(2, Math.floor(state.outline.length * drawT));
-        ctx.globalAlpha = 0.22 + 0.17 * drawT + 0.18 * beatGlow;
+        ctx.globalAlpha = (0.24 + 0.2 * drawT + 0.18 * beatGlow) * heartPresence;
         ctx.strokeStyle = rgba(mood.a, 0.86);
         ctx.shadowColor = rgba(mood.a, 0.8);
-        ctx.shadowBlur = isSmall ? 6 : 9;
-        ctx.lineWidth = isSmall ? 3.4 : 4.8;
+        ctx.shadowBlur = isSmall ? 8 : 13;
+        ctx.lineWidth = isSmall ? 3.8 : 5.6;
         strokeFinalHeartOutline(ctx, state.outline, outlineEnd, cx, cy, unit, beat);
-        ctx.globalAlpha = 0.62 + 0.18 * beatGlow;
+        ctx.globalAlpha = (0.68 + 0.18 * beatGlow) * heartPresence;
         ctx.strokeStyle = rgba(mood.c, 0.95);
-        ctx.shadowBlur = isSmall ? 3 : 5;
-        ctx.lineWidth = isSmall ? 1 : 1.25;
+        ctx.shadowBlur = isSmall ? 4 : 7;
+        ctx.lineWidth = isSmall ? 1.2 : 1.55;
         strokeFinalHeartOutline(ctx, state.outline, outlineEnd, cx, cy, unit, beat);
         ctx.shadowBlur = 0;
 
@@ -1890,7 +1896,7 @@
           }
         }
 
-        if (drawT >= 1 && !state.burstFired && !reduceMotion) {
+        if (finalDrawT >= 1 && !state.burstFired && !reduceMotion) {
           state.burstFired = true;
           window.dispatchEvent(new CustomEvent("loveburst", {
             detail: { x: cx, y: cy + 17 * unit * beat, count: 7, spread: 24 }
@@ -1902,8 +1908,8 @@
       ctx.shadowBlur = isSmall ? 4 : 7;
       visiblePoints.forEach(function (point, i) {
         const twinkle = 0.62 + 0.38 * Math.sin(now * 0.003 + point.phase);
-        const size = (isSmall ? 1.45 : 1.9) + (i % 8 === 0 ? 0.9 : 0);
-        ctx.globalAlpha = clamp(reveal * twinkle * (0.28 + point.local * 0.72), 0, 0.95);
+        const size = (isSmall ? 1.7 : 2.25) + (i % 8 === 0 ? 1.05 : 0);
+        ctx.globalAlpha = clamp((0.28 + reveal * 0.72) * twinkle * (0.28 + point.local * 0.72), 0, 0.98);
         ctx.fillStyle = point.warm ? rgba(mood.c, 0.95) : rgba(mood.b, 0.88);
         ctx.beginPath();
         ctx.arc(point.x, point.y, size * (0.9 + inkT * 0.16 + beatGlow * 0.2), 0, Math.PI * 2);
@@ -2517,6 +2523,18 @@
     const paper = document.getElementById("letter-paper");
     if (!stage || !envelope || !paper) return;
 
+    const canWrite = hasGSAP && !reduceMotion;
+    const writingTargets = prepareWritableLetter();
+    let writeTl = null;
+    let pen = null;
+    if (canWrite) {
+      pen = document.createElement("span");
+      pen.className = "letter-pen-caret";
+      pen.setAttribute("aria-hidden", "true");
+      paper.appendChild(pen);
+      resetLetterWriting();
+    }
+
     let open = false;
     envelope.addEventListener("click", function () { setOpen(!open); });
 
@@ -2553,7 +2571,8 @@
       envelope.setAttribute("aria-expanded", open ? "true" : "false");
       paper.setAttribute("aria-hidden", open ? "false" : "true");
       if (open) {
-        [90, 680].forEach(function (delay) {
+        paper.scrollTop = 0;
+        [90, 680, 1150, 1650].forEach(function (delay) {
           setTimeout(function () {
             centerPaper();
             refreshScroll();
@@ -2562,14 +2581,93 @@
         window.dispatchEvent(new CustomEvent("loveburst", {
           detail: { x: innerWidth / 2, y: innerHeight * 0.55, count: 26, spread: 150 }
         }));
-        // the letter writes itself in, line by line
-        if (hasGSAP && !reduceMotion) {
-          gsap.fromTo(paper.querySelectorAll(".letter-date, .letter-handwriting p"),
-            { clipPath: "inset(-6px 100% -6px 0)", opacity: 0.35 },
-            { clipPath: "inset(-6px 0% -6px 0)", opacity: 1, duration: 1.05, stagger: 0.5,
-              ease: "power1.inOut", delay: 0.4, clearProps: "clipPath,opacity" });
-        }
+        playLetterWriting();
+      } else {
+        resetLetterWriting();
       }
+    }
+
+    function prepareWritableLetter() {
+      const targets = [];
+      Array.prototype.slice.call(paper.querySelectorAll(".letter-date, .letter-handwriting p")).forEach(function (line) {
+        const original = line.dataset.originalText || line.textContent || "";
+        line.dataset.originalText = original;
+        line.textContent = "";
+        original.split(/(\s+)/).forEach(function (part) {
+          if (!part) return;
+          if (/^\s+$/.test(part)) {
+            line.appendChild(document.createTextNode(part));
+            return;
+          }
+          const token = document.createElement("span");
+          token.className = "letter-write-token";
+          token.textContent = part;
+          line.appendChild(token);
+          targets.push(token);
+        });
+      });
+      return targets;
+    }
+
+    function resetLetterWriting() {
+      if (!canWrite || !writingTargets.length) return;
+      if (writeTl) {
+        writeTl.kill();
+        writeTl = null;
+      }
+      paper.classList.remove("is-written");
+      paper.classList.add("is-writing");
+      gsap.set(writingTargets, {
+        clipPath: "inset(-6px 100% -6px 0)",
+        opacity: 0,
+        y: 2
+      });
+      if (pen) gsap.set(pen, { opacity: 0, x: 0, y: 0 });
+    }
+
+    function playLetterWriting() {
+      if (!canWrite || !writingTargets.length) return;
+      resetLetterWriting();
+      writeTl = gsap.timeline({
+        delay: 0.52,
+        onComplete: function () {
+          paper.classList.remove("is-writing");
+          paper.classList.add("is-written");
+          gsap.set(writingTargets, { clearProps: "clipPath,opacity,transform" });
+          if (pen) gsap.to(pen, { opacity: 0, duration: 0.22, ease: "sine.out" });
+        }
+      });
+
+      let gapBefore = 0;
+      writingTargets.forEach(function (token) {
+        const text = token.textContent || "";
+        const duration = Math.min(0.13, 0.024 + text.length * 0.006);
+        writeTl.to(token, {
+          clipPath: "inset(-6px 0% -6px 0)",
+          opacity: 1,
+          y: 0,
+          duration: duration,
+          ease: "sine.out",
+          onStart: function () { movePenTo(token); }
+        }, "+=" + gapBefore);
+        gapBefore = /[.!?]$/.test(text) ? 0.055 : (/[,;:]$/.test(text) ? 0.026 : 0.006);
+      });
+      if (pen) writeTl.to(pen, { opacity: 0, duration: 0.28, ease: "sine.out" }, "+=0.18");
+    }
+
+    function movePenTo(token) {
+      if (!pen || !token) return;
+      const tokenRect = token.getBoundingClientRect();
+      const paperRect = paper.getBoundingClientRect();
+      const x = tokenRect.right - paperRect.left + paper.scrollLeft + 3;
+      const y = tokenRect.bottom - paperRect.top + paper.scrollTop - 7;
+      gsap.to(pen, {
+        x: x,
+        y: y,
+        opacity: 0.82,
+        duration: 0.08,
+        ease: "sine.out"
+      });
     }
 
     function centerPaper() {
@@ -2586,6 +2684,19 @@
       } else {
         scrollTo({ top: targetScroll, behavior: reduceMotion ? "auto" : "smooth" });
       }
+      setTimeout(correctPaperPosition, reduceMotion ? 0 : 180);
+      setTimeout(correctPaperPosition, reduceMotion ? 0 : 760);
+    }
+
+    function correctPaperPosition() {
+      const rect = paper.getBoundingClientRect();
+      const targetTop = Math.max(34, (innerHeight - rect.height) / 2);
+      const targetBottom = Math.min(innerHeight - 34, targetTop + rect.height);
+      let delta = 0;
+      if (rect.top < targetTop - 6) delta = rect.top - targetTop;
+      else if (rect.bottom > targetBottom + 6) delta = rect.bottom - targetBottom;
+      if (Math.abs(delta) < 6) return;
+      scrollTo({ top: Math.max(0, scrollY + delta), behavior: "auto" });
     }
   }
 
