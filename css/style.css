@@ -830,9 +830,13 @@ body.book-intro-playing .journey-rail{opacity:0;pointer-events:none}
 .letter-sign{font-family:var(--hand);font-size:2rem;color:var(--blue-soft)}
 
 /* ============ FINALE ============ */
-.finale{min-height:90vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.finale{min-height:155vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
 .finale-title{font-family:var(--serif);font-size:clamp(2.6rem,8vw,6rem);line-height:1.1}
 .finale-sub{font-size:2.4rem;color:var(--blush);margin-top:.4em}
+.finale-title,.finale-sub,.finale .replay-btn{transition:opacity .45s ease,visibility 0s linear 0s}
+body.constellation-spotlight .finale-title,
+body.constellation-spotlight .finale-sub,
+body.constellation-spotlight .finale .replay-btn{opacity:0 !important;visibility:hidden;pointer-events:none}
 .replay-btn{margin-top:3em;padding:13px 32px;border-radius:999px;border:1px solid rgba(156,192,255,.4);
   background:rgba(10,18,48,.45);backdrop-filter:blur(6px);color:var(--cream);
   font-family:var(--hand);font-size:1.4rem;cursor:pointer;

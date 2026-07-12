@@ -649,13 +649,13 @@
       });
     }
 
-    // finale: the toast settles in, and hearts drift while we stay on it
+    // Let the constellation have the first half of the finale before the toast arrives.
     const finaleTitle = document.querySelector(".finale-title");
     if (finaleTitle) {
       finaleTitle.classList.remove("reveal");
       gsap.fromTo(finaleTitle, { autoAlpha: 0, scale: 0.92, yPercent: 10 },
         { autoAlpha: 1, scale: 1, yPercent: 0, ease: "none",
-          scrollTrigger: { trigger: ".finale", start: "top 85%", end: "center 55%", scrub: 0.5 } });
+          scrollTrigger: { trigger: ".finale", start: "top -28%", end: "bottom 42%", scrub: 0.5 } });
     }
     if (!isSmall) {
       let rainId = null;
@@ -1074,6 +1074,7 @@
   function setupJourneyCanvas(hasGSAP) {
     const constellationCanvas = document.getElementById("constellation-canvas");
     const journeyCanvas = document.getElementById("journey-canvas");
+    const finale = document.querySelector(".finale");
     if (!constellationCanvas || !journeyCanvas) return;
 
     const contextOptions = { alpha: true, desynchronized: true };
@@ -1262,6 +1263,8 @@
       const max = Math.max(1, doc.scrollHeight - h);
       scrollProgress = clamp(scrollY / max, 0, 1);
       activeIndex = getActiveIndex();
+      const finaleHeartProgress = getFinaleHeartProgress();
+      document.body.classList.toggle("constellation-spotlight", finaleHeartProgress > 0.02 && finaleHeartProgress < 0.82);
     }
 
     function getActiveIndex() {
@@ -1788,9 +1791,8 @@
 
     function drawFinalHeart(ctx, now, mood, fastScroll) {
       const state = finalHeartState();
-      const finaleReveal = clamp((scrollProgress - 0.78) / 0.16, 0, 1);
-      const ambientReveal = easeOutCubic(clamp((scrollProgress - 0.06) / 0.14, 0, 1)) * (isSmall ? 0.62 : 0.78);
-      const reveal = Math.max(ambientReveal, finaleReveal);
+      const finaleReveal = getFinaleHeartProgress();
+      const reveal = finaleReveal;
       if (reveal <= 0.015 || (fastScroll && reveal < 0.18)) {
         state.burstFired = false;
         return;
@@ -1802,14 +1804,13 @@
       const unit = Math.min(w, h) * (isSmall ? 0.012 : 0.014);
       rebuildFinalHeart(state, cx, cy, unit, isSmall ? 32 : 44);
 
-      const gatherT = reduceMotion ? 1 : easeInOutCubic(clamp(reveal / 0.42, 0, 1));
-      const ambientDrawT = easeOutCubic(clamp((scrollProgress - 0.1) / 0.16, 0, 1));
-      const finalDrawT = reduceMotion ? 1 : easeInOutCubic(clamp((finaleReveal - 0.16) / 0.42, 0, 1));
-      const drawT = Math.max(ambientDrawT, finalDrawT);
-      const inkT = easeOutCubic(clamp((finaleReveal - (reduceMotion ? 0.18 : 0.56)) / 0.28, 0, 1));
-      const dateT = easeOutCubic(clamp((finaleReveal - (reduceMotion ? 0.3 : 0.72)) / 0.22, 0, 1));
-      const aliveT = reduceMotion ? 0 : Math.max(clamp((finaleReveal - 0.86) / 0.14, 0, 1), ambientReveal * 0.18);
-      const heartPresence = clamp(0.54 + reveal * 0.46 + finaleReveal * 0.18, 0, 1);
+      const gatherT = reduceMotion ? 1 : easeInOutCubic(clamp(reveal / 0.38, 0, 1));
+      const finalDrawT = reduceMotion ? 1 : easeInOutCubic(clamp((finaleReveal - 0.18) / 0.38, 0, 1));
+      const drawT = finalDrawT;
+      const inkT = easeOutCubic(clamp((finaleReveal - (reduceMotion ? 0.14 : 0.52)) / 0.22, 0, 1));
+      const dateT = easeOutCubic(clamp((finaleReveal - (reduceMotion ? 0.22 : 0.66)) / 0.18, 0, 1));
+      const aliveT = reduceMotion ? 0 : clamp((finaleReveal - 0.78) / 0.16, 0, 1);
+      const heartPresence = easeOutCubic(clamp((reveal + 0.08) / 0.22, 0, 1));
 
       let beat = 1;
       let beatGlow = 0;
@@ -1856,7 +1857,7 @@
         }
       }
 
-      const glowT = Math.max(inkT, ambientReveal * 0.46);
+      const glowT = inkT;
       if (glowT > 0.05) {
         const bloom = ctx.createRadialGradient(cx, cy - unit * 2, unit, cx, cy, unit * 19);
         bloom.addColorStop(0, rgba(mood.b, 0.12 * glowT + 0.08 * beatGlow));
@@ -1984,6 +1985,16 @@
         ctx.setLineDash([]);
       }
       ctx.restore();
+    }
+
+    // The recap is deliberately long and pinned, so total page progress reaches the
+    // finale range while its Polaroids are still on screen. Anchor this reveal to the
+    // finale itself so the constellation receives an unobstructed closing beat.
+    function getFinaleHeartProgress() {
+      if (!finale) return 0;
+      const rect = finale.getBoundingClientRect();
+      const travel = Math.max(h * 1.08, rect.height * 0.66);
+      return clamp((h * 0.84 - rect.top) / travel, 0, 1);
     }
 
     function strokeFinalHeartOutline(ctx, outline, count, cx, cy, unit, beat) {
